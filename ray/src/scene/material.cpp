@@ -45,6 +45,15 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 	// 		.
 	// 		.
 	// }
+
+	// ambient
+
+	// diffuse
+
+	// specular
+
+	//
+
 	return kd(i);
 }
 

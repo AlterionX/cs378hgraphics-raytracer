@@ -89,9 +89,9 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		// more steps: add in the contributions from reflected and refracted
 		// rays.
 
-		//const Material& m = i.getMaterial();
-		//colorC = m.shade(scene.get(), r, i);
-		colorC = glm::dvec3(1.0, 1.0, 1.0);
+		// colorC = glm::dvec3(0.0, 1.0, 0.5);
+		const Material& m = i.getMaterial();
+		colorC = m.shade(scene.get(), r, i);
 	} else {
 		// No intersection.  This ray travels to infinity, so we color
 		// it according to the background color, which in this (simple) case
@@ -224,6 +224,10 @@ void RayTracer::traceImage(int w, int h)
 	//
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
+	for(int i=0; i<w; i++)
+		for(int j=0; j<h; j++) {
+			setPixel(i, j, tracePixel(i, j));
+		}
 }
 
 int RayTracer::aaImage()
@@ -271,3 +275,4 @@ void RayTracer::setPixel(int i, int j, glm::dvec3 color)
 	pixel[1] = (int)( 255.0 * color[1]);
 	pixel[2] = (int)( 255.0 * color[2]);
 }
+

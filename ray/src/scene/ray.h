@@ -49,10 +49,10 @@ public:
 	void setDirection(const glm::dvec3& dd) { d = dd; }
 
 private:
-	glm::dvec3 p;
-	glm::dvec3 d;
-	glm::dvec3 atten;
-	RayType t;
+	glm::dvec3 p; // origin
+	glm::dvec3 d; // direction
+	glm::dvec3 atten; // attenuation
+	RayType t; // type
 };
 
 

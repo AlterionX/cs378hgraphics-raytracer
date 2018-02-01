@@ -5,10 +5,6 @@
 #include <algorithm>
 #include <cmath>
 #include "../ui/TraceUI.h"
-#include "../util.h"
-
-#include <iostream>
-
 extern TraceUI* traceUI;
 
 using namespace std;
@@ -97,43 +93,17 @@ bool TrimeshFace::intersect(ray& r, isect& i) const
 // intersection in u (alpha) and v (beta).
 bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 {
-	std::cout << "hallo" << std::endl;
+	// YOUR CODE HERE
+	//
+	// FIXME: Add ray-trimesh intersection
 
-	glm::dvec3 a = this->parent->vertices[(*this)[0]];
-	glm::dvec3 b = this->parent->vertices[(*this)[1]];
-	glm::dvec3 c = this->parent->vertices[(*this)[2]];
+	if(glm::dot(r.getDirection(), glm::dvec3(0.57735026919, 0.57735026919, 0.57735026919)) > 0.9) {
+		i.setT(1.0);
+		i.setUVCoordinates(glm.dvec2(1.0, 0.0));
+		return true;
+	}		
 
-	//assume counter clockwise
-	double t = glm::dot(this->normal, r.getDirection());
-	if (ZCHK(t)) return false;
-	t = glm::dot(r.getPosition() - a, this->normal) / t;
-	if (BTTC(t)) return false;
-	glm::dvec3 p_isect = r.at(t);
-	for (int i = 0; i < 3; i++) {
-		//On the edge means intersection
-		glm::dvec3 prime = this->parent->vertices[(*this)[i]];
-		glm::dvec3 edgev = this->parent->vertices[(*this)[(i+1)%3]];
-		if (glm::dot(glm::cross(edgev - prime, p_isect - prime), this->normal) < 0) {
-			return false;
-		}
-	}
-
-	//Fill isect
-	std::cout << "hallo" << std::endl;
-	// i.setObject(this);
-	i.setT(t);
-	i.setN(this->normal);
-	glm::dvec3 faceArea = glm::cross(a-b, c-b);
-	double dFaceArea = glm::sqrt(glm::dot(faceArea, faceArea));
-	glm::dvec3 pcu = glm::cross(c-b, p_isect-b);
-	double dpcu = glm::sqrt(glm::dot(pcu, pcu));
-	glm::dvec3 pav = glm::cross(p_isect-b, a-b);
-	double dpav = glm::sqrt(glm::dot(pav, pav));
-	if (ZCHK(dFaceArea)) return false;
-	i.setUVCoordinates(glm::dvec2(dpcu/dFaceArea, dpav/dFaceArea));
-	// i.setBary(b);
-
-	return true;
+	return false;
 }
 
 // Once all the verts and faces are loaded, per vertex normals can be
@@ -160,3 +130,4 @@ void Trimesh::generateNormals()
 
 	vertNorms = true;
 }
+
