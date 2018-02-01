@@ -6,6 +6,7 @@ extern TraceUI* traceUI;
 
 #include <glm/gtx/io.hpp>
 #include <iostream>
+#include <algorithm>
 #include "../fileio/images.h"
 
 using namespace std;
@@ -46,13 +47,40 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 	// 		.
 	// }
 
-	// ambient
+	// intersection
+	glm::dvec3 isect_p = r.at(i.getT());
+	glm::dvec3 isect_n = i.getN();
+	glm::dvec3 ray_d = r.getDirection();
 
-	// diffuse
+	// material params
+	glm::dvec3 ka_val = ka(i);
+	glm::dvec3 kd_val = kd(i);
+	glm::dvec3 ks_val = ks(i);
+	double sh_val = shininess(i);
 
-	// specular
+	// sum all light in
+	glm::dvec3 i_out = ka(i) * scene->ambient();
+	for(const auto& pLight: scene->getAllLights()) {
+		glm::dvec3 l_ld = pLight->getDirection(isect_p);
+		glm::dvec3 l_color = pLight->getColor();
+		double l_dattn_c = pLight->distanceAttenuation(isect_p);
+		glm::dvec3 l_sattn_c = pLight->shadowAttenuation(r, isect_p);
 
-	return kd(i);
+		if(glm::dot(l_ld, isect_n) > 0) {
+			glm::dvec3 l_rd = l_ld - 2*(glm::dot(l_ld, isect_n))*isect_n;
+
+			for(int k=0; k<3; k++) {
+				i_out[k] += l_dattn_c * l_color[k] * (
+							kd_val[k] * max(0.0, glm::dot(l_ld, isect_n))
+							+ ks_val[k] * pow(max(0.0, glm::dot(l_rd, ray_d)), sh_val));
+			}
+		}
+	}
+	
+	// for(int k=0; k<3; k++)
+	// 	i_out[k] = min(1.0, i_out[k]);
+
+	return i_out;
 }
 
 TextureMap::TextureMap(string filename)
