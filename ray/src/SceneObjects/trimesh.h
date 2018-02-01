@@ -130,6 +130,7 @@ public:
 
 	bool intersect(ray &r, isect &i) const;
 	bool intersectLocal(ray &r, isect &i) const;
+	glm::dvec3 phInter(const glm::dvec3 &p) const;
 
 	bool hasBoundingBoxCapability() const { return true; }
 

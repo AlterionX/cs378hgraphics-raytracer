@@ -104,33 +104,52 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 	//assume counter clockwise
 	double t = glm::dot(this->normal, r.getDirection());
 	if (ZCHK(t)) return false;
-	t = glm::dot(r.getPosition() - a, this->normal) / t;
+	t = glm::dot(a - r.getPosition(), this->normal) / t;
 	if (BTTC(t)) return false;
 	glm::dvec3 p_isect = r.at(t);
 	for (int i = 0; i < 3; i++) {
 		//On the edge means intersection
 		glm::dvec3 prime = this->parent->vertices[(*this)[i]];
 		glm::dvec3 edgev = this->parent->vertices[(*this)[(i+1)%3]];
-		if (glm::dot(glm::cross(edgev - prime, p_isect - prime), this->normal) < 0) {
+		if (BTTC(glm::dot(glm::cross(edgev - prime, p_isect - prime), this->normal))) {
 			return false;
 		}
 	}
 
-	//Fill isect
+	//calc uv
+	glm::dvec3 faceAreaV = glm::cross(b-a, c-a);
+	double faceArea = glm::length(faceAreaV);
+	glm::dvec3 uV = glm::cross(b-a, p_isect-a);
+	glm::dvec3 vV = glm::cross(p_isect-a, c-a);
+	if (ZCHK(faceArea)) return false;
+	glm::dvec2 uv = glm::dvec2(glm::length(uV)/faceArea, glm::length(vV)/faceArea);
+
+	//Fill isect with known
 	i.setObject(this);
 	i.setT(t);
-	i.setN(this->normal);
-	glm::dvec3 faceAreaV = glm::cross(b-a, c-a);
-	double faceArea = glm::sqrt(glm::dot(faceAreaV, faceAreaV));
-	glm::dvec3 uV = glm::cross(b-a, p_isect-a);
-	double u = glm::sqrt(glm::dot(uV, uV));
-	glm::dvec3 vV = glm::cross(p_isect-a, c-a);
-	double v = glm::sqrt(glm::dot(vV, vV));
-	if (ZCHK(faceArea)) return false;
-	i.setUVCoordinates(glm::dvec2(uV/faceArea, vV/faceArea));
+	i.setUVCoordinates(uv);
 	i.setBary(a);
+	if (!this->parent->vertNorms) {
+		i.setN(this->normal); //Phong
+	} else {
+		i.setN(phInter(p_isect)); //Phong
+	}
 
 	return true;
+}
+
+glm::dvec3 TrimeshFace::phInter(const glm::dvec3 &p) const {
+	glm::dvec3 a = this->parent->vertices[(*this)[0]];
+	glm::dvec3 b = this->parent->vertices[(*this)[1]];
+	glm::dvec3 c = this->parent->vertices[(*this)[2]];
+	glm::dvec3 aN = this->parent->normals[(*this)[0]];
+	glm::dvec3 bN = this->parent->normals[(*this)[1]];
+	glm::dvec3 cN = this->parent->normals[(*this)[2]];
+	double aDist = glm::distance(a, p);
+	double bDist = glm::distance(b, p);
+	double cDist = glm::distance(c, p);
+	double totDist = aDist + bDist + cDist;
+	return glm::normalize(aDist / totDist * aN + bDist / totDist * bN + cDist / totDist * cN);
 }
 
 // Once all the verts and faces are loaded, per vertex normals can be
