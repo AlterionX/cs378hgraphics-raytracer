@@ -20,8 +20,6 @@
 #include <iostream>
 #include <fstream>
 
-#include <pthread.h>
-
 using namespace std;
 extern TraceUI* traceUI;
 
@@ -100,7 +98,6 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		if (m.Recur() && depth > 0) {
 			depth -= 1;
 			double modT = i.getT() - RAY_EPSILON;
-
 
 			//Constants
 			//Assuming hitting a face from the back is leaving and from the front is entering
