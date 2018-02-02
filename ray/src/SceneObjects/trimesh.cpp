@@ -97,30 +97,34 @@ bool TrimeshFace::intersect(ray& r, isect& i) const
 // intersection in u (alpha) and v (beta).
 bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 {
-	glm::dvec3 a = this->parent->vertices[(*this)[0]];
-	glm::dvec3 b = this->parent->vertices[(*this)[1]];
-	glm::dvec3 c = this->parent->vertices[(*this)[2]];
+	glm::dvec3 verts[3] = {
+		this->parent->vertices[(*this)[0]],
+		this->parent->vertices[(*this)[1]],
+		this->parent->vertices[(*this)[2]]
+	};
 
 	//assume counter clockwise
+	//plane intersection
 	double t = glm::dot(this->normal, r.getDirection());
 	if (ZCHK(t)) return false;
-	t = glm::dot(a - r.getPosition(), this->normal) / t;
+	t = glm::dot(verts[0] - r.getPosition(), this->normal) / t;
 	if (BTTC(t)) return false;
 	glm::dvec3 p_isect = r.at(t);
+
+	//Within tri
 	for (int i = 0; i < 3; i++) {
 		//On the edge means intersection
-		glm::dvec3 prime = this->parent->vertices[(*this)[i]];
-		glm::dvec3 edgev = this->parent->vertices[(*this)[(i+1)%3]];
+		glm::dvec3 prime = verts[i];
+		glm::dvec3 edgev = verts[(i+1)%3];
 		if (BTTC(glm::dot(glm::cross(edgev - prime, p_isect - prime), this->normal))) {
 			return false;
 		}
 	}
 
-	//calc uv
-	glm::dvec3 faceAreaV = glm::cross(b-a, c-a);
-	double faceArea = glm::length(faceAreaV);
-	glm::dvec3 uV = glm::cross(b-a, p_isect-a);
-	glm::dvec3 vV = glm::cross(p_isect-a, c-a);
+	//calc uv, see if can merge with upper section
+	double faceArea = glm::length(glm::cross(verts[1] - verts[0], verts[2] - verts[3]));
+	glm::dvec3 uV = glm::cross(verts[1] - verts[0], p_isect - verts[0]);
+	glm::dvec3 vV = glm::cross(p_isect - verts[0], verts[2] - verts[0]);
 	if (ZCHK(faceArea)) return false;
 	glm::dvec2 uv = glm::dvec2(glm::length(uV)/faceArea, glm::length(vV)/faceArea);
 
@@ -128,28 +132,14 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 	i.setObject(this);
 	i.setT(t);
 	i.setUVCoordinates(uv);
-	i.setBary(a);
-	if (!this->parent->vertNorms) {
-		i.setN(this->normal); //Phong
-	} else {
-		i.setN(phInter(p_isect)); //Phong
-	}
+	i.setBary(verts[0]);
+	i.setN(this->parent->vertNorms ? glm::normalize(
+		(1 - uv[0] - uv[1]) * this->parent->normals[(*this)[0]]
+		+ uv[0] * this->parent->normals[(*this)[1]]
+		+ uv[1] * this->parent->normals[(*this)[2]]
+	) : this->normal); //Phong only if vert norms present
 
 	return true;
-}
-
-glm::dvec3 TrimeshFace::phInter(const glm::dvec3 &p) const {
-	glm::dvec3 a = this->parent->vertices[(*this)[0]];
-	glm::dvec3 b = this->parent->vertices[(*this)[1]];
-	glm::dvec3 c = this->parent->vertices[(*this)[2]];
-	glm::dvec3 aN = this->parent->normals[(*this)[0]];
-	glm::dvec3 bN = this->parent->normals[(*this)[1]];
-	glm::dvec3 cN = this->parent->normals[(*this)[2]];
-	double aDist = glm::distance(a, p);
-	double bDist = glm::distance(b, p);
-	double cDist = glm::distance(c, p);
-	double totDist = aDist + bDist + cDist;
-	return glm::normalize(aDist / totDist * aN + bDist / totDist * bN + cDist / totDist * cN);
 }
 
 // Once all the verts and faces are loaded, per vertex normals can be

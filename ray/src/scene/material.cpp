@@ -59,7 +59,7 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 	const double sh_val = shininess(i);
 
 	// local illumination: ambient, diffuse, specular
-	glm::dvec3 i_out = ka(i) * scene->ambient();
+	glm::dvec3 i_out = ke(i) + ka(i) * scene->ambient();
 	for(const auto& pLight: scene->getAllLights()) {
 		const glm::dvec3 l_ld = pLight->getDirection(isect_p);
 		const glm::dvec3 l_color = pLight->getColor();

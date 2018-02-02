@@ -80,7 +80,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 	if(scene->intersect(r, i)) {
 		// YOUR CODE HERE
 
-		// An intersection occurred!  We've got work to do.  For now,
+		// An intersection occurred!  We've got work to do. For now,
 		// this code gets the material for the surface that was intersected,
 		// and asks that material to provide a color for the ray.
 
@@ -89,9 +89,53 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		// more steps: add in the contributions from reflected and refracted
 		// rays.
 
-		// colorC = glm::dvec3(0.0, 1.0, 0.5);
+		// collision material
 		const Material& m = i.getMaterial();
-		colorC = m.shade(scene.get(), r, i);
+		glm::dvec3 reflectCol(0, 0, 0);
+		glm::dvec3 refractCol(0, 0, 0);
+		double refractDist = 0;
+
+		// later, step up/down a little
+		if (m.Recur() && depth > 0) {
+			depth -= 1;
+			double modT = i.getT() - RAY_EPSILON;
+			if (m.Both()) {
+				auto refractInd = 1/m.index(i);
+				auto c = glm::dot(-i.getN(), r.getDirection());
+				auto radicand = 1 - refractInd * refractInd * (1 - c * c);
+				//reflection
+	 			if (m.Refl()) {
+	 				ray reflectRay(r.at(modT), r.getDirection() + 2*c*i.getN(), glm::dvec3(0, 0, 0), ray::REFLECTION);
+					double reflectT = t + modT;
+	 				reflectCol = traceRay(reflectRay, thresh, depth - 1, reflectT);
+	 			}
+				if (m.Trans() && radicand > 0) {
+					//refraction
+					isect refractEnd;
+					ray refractRay(r.at(i.getT()),
+					 	refractInd * r.getDirection() + (refractInd * c - glm::sqrt(radicand)) * i.getN(),
+						glm::dvec3(0, 0, 0), ray::REFRACTION
+					);
+					if (scene->intersect(refractRay, refractEnd)) { //Note, not robust to intersecting objects
+						refractDist = refractEnd.getT();
+						double refractModT = refractEnd.getT() - RAY_EPSILON;
+						auto refractEndP = refractRay.at(refractModT);
+
+						refractInd = m.index(i)/1;
+						c = glm::dot(-i.getN(), refractRay.getDirection());
+						radicand = 1 - refractInd * refractInd * (1 - c * c);
+						ray rerefractedRay(refractEndP,
+							radicand < 0 ? refractRay.getDirection() + 2*c*i.getN() : refractInd * refractRay.getDirection() + (refractInd * c - glm::sqrt(radicand)) * refractEnd.getN(),
+							glm::dvec3(0, 0, 0), radicand < 0 ? ray::REFLECTION : ray::VISIBILITY
+						);
+						double refractT = t + modT + refractModT;
+						refractCol = traceRay(rerefractedRay, thresh, depth - 1, refractT);
+					}
+				}
+			}
+		}
+
+		colorC = m.shade(scene.get(), r, i) + m.kr(i) * reflectCol + glm::pow(m.kt(i), glm::dvec3(refractDist, refractDist, refractDist)) * refractCol;
 	} else {
 		// No intersection.  This ray travels to infinity, so we color
 		// it according to the background color, which in this (simple) case
@@ -224,10 +268,14 @@ void RayTracer::traceImage(int w, int h)
 	//
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
-	for(int i=0; i<w; i++)
+
+
+
+	for(int i=0; i<w; i++) {
 		for(int j=0; j<h; j++) {
 			setPixel(i, j, tracePixel(i, j));
 		}
+	}
 }
 
 int RayTracer::aaImage()
@@ -275,4 +323,3 @@ void RayTracer::setPixel(int i, int j, glm::dvec3 color)
 	pixel[1] = (int)( 255.0 * color[1]);
 	pixel[2] = (int)( 255.0 * color[2]);
 }
-
