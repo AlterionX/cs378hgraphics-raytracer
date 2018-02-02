@@ -91,51 +91,48 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 
 		// collision material
 		const Material& m = i.getMaterial();
-		glm::dvec3 reflectCol(0, 0, 0);
-		glm::dvec3 refractCol(0, 0, 0);
-		double refractDist = 0;
+		t = i.getT();
 
-		// later, step up/down a little
+		colorC = m.shade(scene.get(), r, i);
+
 		if (m.Recur() && depth > 0) {
 			depth -= 1;
 			double modT = i.getT() - RAY_EPSILON;
-			if (m.Both()) {
-				auto refractInd = 1/m.index(i);
-				auto c = glm::dot(-i.getN(), r.getDirection());
-				auto radicand = 1 - refractInd * refractInd * (1 - c * c);
-				//reflection
-	 			if (m.Refl()) {
-	 				ray reflectRay(r.at(modT), r.getDirection() + 2*c*i.getN(), glm::dvec3(0, 0, 0), ray::REFLECTION);
-					double reflectT = t + modT;
-	 				reflectCol = traceRay(reflectRay, thresh, depth - 1, reflectT);
-	 			}
-				if (m.Trans() && radicand > 0) {
-					//refraction
-					isect refractEnd;
-					ray refractRay(r.at(i.getT()),
-					 	refractInd * r.getDirection() + (refractInd * c - glm::sqrt(radicand)) * i.getN(),
-						glm::dvec3(0, 0, 0), ray::REFRACTION
-					);
-					if (scene->intersect(refractRay, refractEnd)) { //Note, not robust to intersecting objects
-						refractDist = refractEnd.getT();
-						double refractModT = refractEnd.getT() - RAY_EPSILON;
-						auto refractEndP = refractRay.at(refractModT);
 
-						refractInd = m.index(i)/1;
-						c = glm::dot(-i.getN(), refractRay.getDirection());
-						radicand = 1 - refractInd * refractInd * (1 - c * c);
-						ray rerefractedRay(refractEndP,
-							radicand < 0 ? refractRay.getDirection() + 2*c*i.getN() : refractInd * refractRay.getDirection() + (refractInd * c - glm::sqrt(radicand)) * refractEnd.getN(),
-							glm::dvec3(0, 0, 0), radicand < 0 ? ray::REFLECTION : ray::VISIBILITY
-						);
-						double refractT = t + modT + refractModT;
-						refractCol = traceRay(rerefractedRay, thresh, depth - 1, refractT);
-					}
-				}
+			//Constants
+			//Assuming hitting a face from the back is leaving and from the front is entering
+			auto leaving = glm::dot(i.getN(), r.getDirection()) >= 0;
+			auto eta = leaving ? m.index(i)/1 : 1/m.index(i); //refractiveIndex
+			auto kt = leaving ? glm::dvec3(1) : m.kt(i);
+			auto normal = (leaving ? -1.0 : 1.0) * i.getN();
+			auto c = -1 * glm::dot(normal, r.getDirection());
+			auto radicand = 1 - eta * eta * (1 - c * c);
+
+			//reflection
+ 			if (m.Refl() || radicand < 0) {
+				double reflT;
+ 				ray reflRay(r.at(modT),
+				 	r.getDirection() + 2 * c * normal,
+					glm::dvec3(1), r.type()
+				);
+ 				auto reflCol = traceRay(reflRay, thresh, depth - 1, reflT) * m.kr(i);
+				//TODO figure out the proper way to use total internal reflection
+				/*if (radicand < 0) {
+					colorC += reflCol;
+				}*/
+				colorC += reflCol;
+ 			}
+			//refraction
+			if (m.Trans() && radicand >= 0) {
+				double transT;
+				ray transRay(r.at(i.getT() + (leaving ? RAY_EPSILON : 0)),
+				 	eta * r.getDirection() + (eta * c - glm::sqrt(radicand)) * normal,
+					glm::dvec3(1), ray::REFRACTION
+				);
+				//Order important underneath
+				colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::pow(m.kt(i), glm::dvec3(transT));
 			}
 		}
-
-		colorC = m.shade(scene.get(), r, i) + m.kr(i) * reflectCol + glm::pow(m.kt(i), glm::dvec3(refractDist, refractDist, refractDist)) * refractCol;
 	} else {
 		// No intersection.  This ray travels to infinity, so we color
 		// it according to the background color, which in this (simple) case
