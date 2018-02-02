@@ -20,6 +20,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <pthread.h>
+
 using namespace std;
 extern TraceUI* traceUI;
 
@@ -98,6 +100,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		if (m.Recur() && depth > 0) {
 			depth -= 1;
 			double modT = i.getT() - RAY_EPSILON;
+
 
 			//Constants
 			//Assuming hitting a face from the back is leaving and from the front is entering
@@ -266,8 +269,8 @@ void RayTracer::traceImage(int w, int h)
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
 
-
-
+	#pragma omp parallel num_threads(this->threads)
+	#pragma omp for collapse(2)
 	for(int i=0; i<w; i++) {
 		for(int j=0; j<h; j++) {
 			setPixel(i, j, tracePixel(i, j));
