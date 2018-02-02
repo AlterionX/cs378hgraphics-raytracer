@@ -66,14 +66,14 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 		const double l_dattn_c = pLight->distanceAttenuation(isect_p);
 		const glm::dvec3 l_sattn_c = pLight->shadowAttenuation(r, isect_p);
 
-		if(glm::dot(l_ld, isect_n) > 0) {
+		// if(glm::dot(l_ld, isect_n) > 0) {
 			const glm::dvec3 l_rd = l_ld - 2*(glm::dot(l_ld, isect_n))*isect_n;
 
 			i_out += l_dattn_c * l_sattn_c* l_color* (
-						kd_val* glm::max(0.0, glm::dot(l_ld, isect_n))
+						kd_val* glm::abs(glm::dot(l_ld, isect_n))
 						+ ks_val* glm::pow(glm::dvec3(glm::max(0.0, glm::dot(l_rd, ray_d))), 
 												glm::dvec3(sh_val)));
-		}
+		// }
 	}
 
 	// for(int k=0; k<3; k++)

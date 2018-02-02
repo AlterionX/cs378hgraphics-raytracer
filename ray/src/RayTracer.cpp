@@ -94,15 +94,15 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		t = i.getT();
 
 		colorC = m.shade(scene.get(), r, i);
+		// std::cout << depth << "shade :" << colorC << std::endl;
 
 		if (m.Recur() && depth > 0) {
-			depth -= 1;
-			double modT = i.getT() - RAY_EPSILON;
+			// double modT = i.getT() - RAY_EPSILON;
 
 			//Constants
 			//Assuming hitting a face from the back is leaving and from the front is entering
 			auto leaving = glm::dot(i.getN(), r.getDirection()) >= 0;
-			auto eta = leaving ? m.index(i)/1 : 1/m.index(i); //refractiveIndex
+			auto eta = leaving ? m.index(i)/1.0 : 1.0/m.index(i); //refractiveIndex
 			auto kt = leaving ? glm::dvec3(1) : m.kt(i);
 			auto normal = (leaving ? -1.0 : 1.0) * i.getN();
 			auto c = -1 * glm::dot(normal, r.getDirection());
@@ -111,9 +111,9 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			//reflection
  			if (m.Refl() || radicand < 0) {
 				double reflT;
- 				ray reflRay(r.at(modT),
+ 				ray reflRay(r.at(i.getT()),
 				 	r.getDirection() + 2 * c * normal,
-					glm::dvec3(1), r.type()
+					glm::dvec3(1.0), ray::REFLECTION
 				);
  				auto reflCol = traceRay(reflRay, thresh, depth - 1, reflT) * m.kr(i);
 				//TODO figure out the proper way to use total internal reflection
@@ -121,18 +121,23 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					colorC += reflCol;
 				}*/
 				colorC += reflCol;
+				// std::cout << depth << "refl :" << colorC << std::endl;
  			}
 			//refraction
 			if (m.Trans() && radicand >= 0) {
 				double transT;
 				ray transRay(r.at(i.getT()), // (leaving ? RAY_EPSILON : 0)
 				 	eta * r.getDirection() + (eta * c - glm::sqrt(radicand)) * normal,
-					glm::dvec3(1), ray::REFRACTION
+					glm::dvec3(1.0), ray::REFRACTION
 				);
 				// Order important underneath !!!!
 				colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0);
+				// colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::pow(m.kt(i), glm::dvec3(transT)); // glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0);
+				// std::cout << depth << "refr :" << colorC << std::endl;
 			}
 		}
+		// std::cout << depth << "res  :" << colorC << std::endl;
+
 	} else {
 		// No intersection.  This ray travels to infinity, so we color
 		// it according to the background color, which in this (simple) case
