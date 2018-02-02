@@ -21,31 +21,31 @@ glm::dvec3 DirectionalLight::shadowAttenuation(const ray& r, const glm::dvec3& p
 {
 	// YOUR CODE HERE:
 	// You should implement shadow-handling code here.
+	// std::cout << "DirLight Shadow" << std::endl;
 
 	// back-up by eps
 	glm::dvec3 pb = p - r.getDirection()*EPS_BACKUP;
 
 	// trace shadow
 	ray r2l(pb, getDirection(pb), glm::dvec3(1.0, 1.0, 1.0), ray::SHADOW);
-	glm::vec3 sattn(1.0, 1.0, 1.0);
+	glm::dvec3 sattn(1.0, 1.0, 1.0);
 	isect cur;
-	bool is_inside = false;
 	while(scene->intersect(r2l, cur)) {
 		// std::cout << "shadow hit: " << r2l.getPosition() << " -> " << r2l.at(cur.getT()) << std::endl;
-
-		// check material
 		const Material& m = cur.getMaterial();
 		const glm::dvec3 kt_val = m.kt(cur);
+		bool is_inside = glm::dot(cur.getN(), r2l.getDirection()) >= 0;
+
+		// check material
 		if(!m.Trans()) {
-			// std::cout << "OPAGUE!!!" << std::endl;
+			// std::cout << "OPAQUE!!!" << std::endl;
 			return glm::dvec3(0.0, 0.0, 0.0);
 		}
 
 		// jump to next intersection
 		if(is_inside) {
 			// std::cout << "transmitting with " << kt_val << " " << cur.getT() << std::endl;
-			for(int k=0; k<3; k++)
-				sattn[k] = sattn[k] * pow(kt_val[k], cur.getT());
+			sattn = sattn * glm::pow(kt_val, glm::dvec3(cur.getT()));
 		}
 		is_inside = !is_inside;
 		r2l.setPosition(r2l.at(cur.getT()));
@@ -92,26 +92,27 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 {
 	// YOUR CODE HERE:
 	// You should implement shadow-handling code here.
+	// std::cout << "P'Light Shadow" << std::endl;
 
 	// back-up by eps
 	glm::dvec3 pb = p - r.getDirection()*EPS_BACKUP;
 
 	// trace shadow
 	ray r2l(pb, getDirection(pb), glm::dvec3(1.0, 1.0, 1.0), ray::SHADOW);
-	glm::vec3 sattn(1.0, 1.0, 1.0);
+	glm::dvec3 sattn(1.0, 1.0, 1.0);
 	isect cur;
-	bool is_inside = false;
 	while(scene->intersect(r2l, cur)) {
 		// std::cout << "shadow hit: " << r2l.getPosition() << " -> " << r2l.at(cur.getT()) << std::endl;
 		const Material& m = cur.getMaterial();
 		const glm::dvec3 kt_val = m.kt(cur);
+		bool is_inside = glm::dot(cur.getN(), r2l.getDirection()) >= 0;
 
 		// check point light
 		if(glm::dot(glm::normalize(position - r2l.at(cur.getT())),
 					r2l.getDirection()) <= 0) {  // went beyond the point light
 			// std::cout << "too far..." << std::endl;
-			if(is_inside) for(int k=0; k<3; k++)
-				sattn[k] = sattn[k] * pow(kt_val[k], glm::distance(position, r2l.getPosition()));
+			if(is_inside)
+				sattn = sattn * glm::pow(kt_val, glm::dvec3(glm::distance(position, r2l.getPosition())));
 			break;
 		}
 
@@ -124,8 +125,7 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 		// jump to next intersection
 		if(is_inside) {
 			// std::cout << "transmitting with " << kt_val << " " << cur.getT() << std::endl;
-			for(int k=0; k<3; k++)
-				sattn[k] = sattn[k] * pow(kt_val[k], cur.getT());
+			sattn = sattn * glm::pow(kt_val, glm::dvec3(cur.getT()));
 		}
 		is_inside = !is_inside;
 		r2l.setPosition(r2l.at(cur.getT()));
