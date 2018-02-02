@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/io.hpp>
 
-#define EPS_BACKUP 0.000001
+#define EPS_BACKUP 0.00000001
 #define SHADOW_INF 1e18
 
 using namespace std;
@@ -103,14 +103,8 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 	bool is_inside = false;
 	while(scene->intersect(r2l, cur)) {
 		// std::cout << "shadow hit: " << r2l.getPosition() << " -> " << r2l.at(cur.getT()) << std::endl;
-
-		// check material
 		const Material& m = cur.getMaterial();
 		const glm::dvec3 kt_val = m.kt(cur);
-		if(!m.Trans()) {
-			// std::cout << "OPAGUE!!!" << std::endl;
-			return glm::dvec3(0.0, 0.0, 0.0);
-		}
 
 		// check point light
 		if(glm::dot(glm::normalize(position - r2l.at(cur.getT())),
@@ -119,6 +113,12 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 			if(is_inside) for(int k=0; k<3; k++)
 				sattn[k] = sattn[k] * pow(kt_val[k], glm::distance(position, r2l.getPosition()));
 			break;
+		}
+
+		// check material
+		if(!m.Trans()) {
+			// std::cout << "OPAQUE!!!" << std::endl;
+			return glm::dvec3(0.0, 0.0, 0.0);
 		}
 
 		// jump to next intersection
