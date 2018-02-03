@@ -121,23 +121,32 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 		}
 	}
 
-	//calc uv, see if can merge with upper section
+	//calc bary, see if can merge with upper section
 	double faceArea = glm::length(glm::cross(verts[1] - verts[0], verts[2] - verts[3]));
 	glm::dvec3 uV = glm::cross(verts[1] - verts[0], p_isect - verts[0]);
 	glm::dvec3 vV = glm::cross(p_isect - verts[0], verts[2] - verts[0]);
 	if (ZCHK(faceArea)) return false;
-	glm::dvec2 uv = glm::dvec2(glm::length(uV)/faceArea, glm::length(vV)/faceArea);
+	glm::dvec3 bary = glm::dvec3(0, glm::length(uV)/faceArea, glm::length(vV)/faceArea);
+	bary[0] = 1 - bary[1] - bary[2];
 
 	//Fill isect with known
 	i.setObject(this);
 	i.setT(t);
-	i.setUVCoordinates(uv);
-	i.setBary(verts[0]);
-	i.setN(this->parent->vertNorms ? glm::normalize(
-		(1 - uv[0] - uv[1]) * this->parent->normals[(*this)[0]]
-		+ uv[0] * this->parent->normals[(*this)[1]]
-		+ uv[1] * this->parent->normals[(*this)[2]]
-	) : this->normal); //Phong only if vert norms present
+	i.setBary(bary);
+	if (this->parent->materials.size() != 0) {
+		Material i_material = Material();
+		i_material += bary[0] * *this->parent->materials[(*this)[0]];
+		i_material += bary[1] * *this->parent->materials[(*this)[1]];
+		i_material += bary[2] * *this->parent->materials[(*this)[2]];
+		i.setMaterial(i_material);
+	}
+	i.setN(this->parent->normals.size() == 0 ? this->normal : glm::normalize(
+		glm::dmat3(
+			this->parent->normals[(*this)[0]],
+			this->parent->normals[(*this)[1]],
+			this->parent->normals[(*this)[2]]
+		) * bary
+	)); //Phong only if vert norms present
 
 	return true;
 }
