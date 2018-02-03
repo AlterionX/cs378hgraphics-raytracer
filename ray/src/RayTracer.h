@@ -38,7 +38,9 @@ public:
 	double aspectRatio();
 
 	void traceImage(int w, int h);
+	int adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &val);
 	int aaImage();
+
 	bool checkRender();
 	void waitRender();
 

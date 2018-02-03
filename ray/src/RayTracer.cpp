@@ -274,9 +274,69 @@ void RayTracer::traceImage(int w, int h)
 	#pragma omp for collapse(2)
 	for(int i=0; i<w; i++) {
 		for(int j=0; j<h; j++) {
-			setPixel(i, j, tracePixel(i, j));
+			tracePixel(i, j);
+			// setPixel(i, j, tracePixel(i, j));
 		}
 	}
+}
+
+glm::dvec2 hammersley(int n, int N) {
+	double mul = 0.5, result = 0.0;
+	while(n > 0) {
+		result += (n%2) ? mul : 0;
+		n /= 2;
+		mul /= 2.0;
+	}
+	return glm::dvec2(result, ((double)n)/N);
+}
+
+#define AA_DIV 8 // uncomment line 352 to use
+double adaa_eps = 0.0005;
+int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &val) {
+	if(x1 + adaa_eps >= x2 || y1 + adaa_eps >= y2) return 0;
+
+	// std::cout << "adaa: " << x1 << " " << x2 << " - " << y1 << " " << y2 << std::endl;
+
+	int sampleCnt = 0;
+	double xs[] = {x1, (x1+x2)/2.0, x2};
+	double ys[] = {y1, (y1+y2)/2.0, y2};
+	double w = x2-x1, h = y2-y1;
+	std::vector<glm::dvec3> s; // samples list
+	glm::dvec3 mu(0.0, 0.0, 0.0), sd(0.0, 0.0, 0.0);
+
+	// sample + calculate mean
+	for(int i=0; i<samples; i++) {
+		glm::dvec2 s_xy = hammersley(i, samples);
+		glm::dvec3 s_c = trace(s_xy[0]*w + x1, s_xy[1]*h + y1);
+		s.push_back(s_c);
+		mu += s_c;
+		sampleCnt++;
+	}
+	mu *= (1.0/samples);
+
+	// calculate standard deviation
+	for(const auto& s_c: s) {
+		sd += glm::pow(glm::abs(s_c - mu), glm::dvec3(2.0));
+	}
+	sd *= (1.0/(samples-1));
+	
+	// divide?
+	if(glm::length(sd) > aaThresh) {
+		// std::cout << "divide!" << std::endl;
+		mu = glm::dvec3(0.0, 0.0, 0.0);
+		for(int i=0; i<2; i++)
+			for(int j=0; j<2; j++) {
+				glm::dvec3 subval;
+				sampleCnt += adaptaa(xs[i], xs[i+1], ys[j], ys[j+1], subval);
+				mu += subval;
+			}
+		mu *= (1.0/4.0);
+	}
+
+	// std::cout << "adaa: " << x1 << " " << x2 << " - " << y1 << " " << y2 << " " << val << std::endl;
+
+	val = mu;
+	return sampleCnt;
 }
 
 int RayTracer::aaImage()
@@ -286,7 +346,26 @@ int RayTracer::aaImage()
 	//
 	// TIP: samples and aaThresh have been synchronized with TraceUI by
 	//      RayTracer::traceSetup() function
-	return 0;
+
+	int sampleCnt = 0;
+
+	// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
+	#pragma omp parallel num_threads(this->threads)
+	#pragma omp for collapse(2)
+	for(int i=0; i<buffer_width; i++) {
+		for(int j=0; j<buffer_height; j++) {
+			double x1 = double(i)/double(buffer_width);
+			double x2 = double(i+1)/double(buffer_width);
+			double y1 = double(j)/double(buffer_height);
+			double y2 = double(j+1)/double(buffer_height);
+
+			glm::dvec3 val;
+			sampleCnt += adaptaa(x1, x2, y1, y2, val);
+			setPixel(i, j, val);
+		}
+	}
+
+	return sampleCnt;
 }
 
 bool RayTracer::checkRender()
@@ -297,6 +376,7 @@ bool RayTracer::checkRender()
 	//
 	// TIPS: Introduce an array to track the status of each worker thread.
 	//       This array is maintained by the worker threads.
+	return true;
 }
 
 void RayTracer::waitRender()
