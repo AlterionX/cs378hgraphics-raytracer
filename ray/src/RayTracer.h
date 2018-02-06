@@ -25,6 +25,8 @@ public:
 
 class RayTracer {
 public:
+	enum AAMode { DEFAULT_AA, ADAPTIVE_AA };
+
 	RayTracer();
 	~RayTracer();
 
@@ -66,6 +68,7 @@ private:
 	int block_size;
 	double thresh;
 	double aaThresh;
+	AAMode aaMode;
 	int samples;
 	std::unique_ptr<Scene> scene;
 

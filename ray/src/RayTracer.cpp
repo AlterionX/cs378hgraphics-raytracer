@@ -307,20 +307,20 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 	// sample + calculate mean
 	#pragma omp parallel num_threads(this->threads)
 	#pragma omp for
-	for(int i=0; i<samples; i++) {
-		glm::dvec2 s_xy = hammersley(i, samples * samples);
+	for(int i=0; i<samples*samples; i++) {
+		glm::dvec2 s_xy = hammersley(i, samples*samples);
 		glm::dvec3 s_c = trace(s_xy[0]*w + x1, s_xy[1]*h + y1);
 		s.push_back(s_c);
 		mu += s_c;
 		sampleCnt++;
 	}
-	mu *= (1.0/samples);
+	mu *= (1.0/(samples*samples));
 
 	// calculate standard deviation
 	for(const auto& s_c: s) {
 		sd += glm::pow(glm::abs(s_c - mu), glm::dvec3(2.0));
 	}
-	sd *= (1.0/(samples-1));
+	sd *= (1.0/(samples*samples-1));
 
 	// divide?
 	if(glm::length(sd) > aaThresh) {
@@ -353,25 +353,46 @@ int RayTracer::aaImage()
 
 	int sampleCnt = 0;
 
-	// std::cout << "Once?" << std::endl;
+	if(aaMode == RayTracer::ADAPTIVE_AA) {
+		// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
+		#pragma omp parallel num_threads(this->threads)
+		#pragma omp for collapse(2)
+		for(int i=0; i<buffer_width; i++) {
+			for(int j=0; j<buffer_height; j++) {
+				double x1 = double(i)/double(buffer_width);
+				double x2 = double(i+1)/double(buffer_width);
+				double y1 = double(j)/double(buffer_height);
+				double y2 = double(j+1)/double(buffer_height);
 
-	// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
-	#pragma omp parallel num_threads(this->threads)
-	#pragma omp for collapse(2)
-	for(int i=0; i<buffer_width; i++) {
-		for(int j=0; j<buffer_height; j++) {
-			double x1 = double(i)/double(buffer_width);
-			double x2 = double(i+1)/double(buffer_width);
-			double y1 = double(j)/double(buffer_height);
-			double y2 = double(j+1)/double(buffer_height);
-
-			glm::dvec3 val;
-			sampleCnt += adaptaa(x1, x2, y1, y2, val);
-			setPixel(i, j, val);
-		}
+				glm::dvec3 val;
+				sampleCnt += adaptaa(x1, x2, y1, y2, val);
+				setPixel(i, j, val);
+			}
+		}	
 	}
+	else { // Raytracer::DEFAULT_AA
+		#pragma omp parallel num_threads(this->threads)
+		#pragma omp for collapse(2)
+		for(int i=0; i<buffer_width; i++) {
+			for(int j=0; j<buffer_height; j++) {
+				double x1 = double(i)/double(buffer_width);
+				double x2 = double(i+1)/double(buffer_width);
+				double y1 = double(j)/double(buffer_height);
+				double y2 = double(j+1)/double(buffer_height);
 
-	// std::cout << "Twice?" << std::endl;
+				glm::dvec3 mu(0.0, 0.0, 0.0);
+				for(int k=0; k<samples*samples; k++) {
+					glm::dvec2 s_xy = hammersley(k, samples*samples);
+					glm::dvec3 s_c = trace(s_xy[0]*(x2-x1) + x1, s_xy[1]*(y2-y1) + y1);
+					mu += s_c;
+					sampleCnt++;
+				}
+				mu *= (1.0/(samples*samples));
+
+				setPixel(i, j, mu);
+			}
+		}	
+	}
 
 	return sampleCnt;
 }
