@@ -135,11 +135,12 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 	i.setBary(bary);
 	if (this->parent->materials.size() != 0) {
 		Material i_material = Material();
-		i_material += bary[0] * *this->parent->materials[(*this)[0]];
-		i_material += bary[1] * *this->parent->materials[(*this)[1]];
-		i_material += bary[2] * *this->parent->materials[(*this)[2]];
+		i_material += bary[0] * (*(this->parent->materials[(*this)[0]]));
+		i_material += bary[1] * (*(this->parent->materials[(*this)[1]]));
+		i_material += bary[2] * (*(this->parent->materials[(*this)[2]]));
 		i.setMaterial(i_material);
 	}
+	std::cout << this->parent->normals.size() << std::endl;
 	i.setN(this->parent->normals.size() == 0 ? this->normal : glm::normalize(
 		glm::dmat3(
 			this->parent->normals[(*this)[0]],
@@ -147,6 +148,7 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 			this->parent->normals[(*this)[2]]
 		) * bary
 	)); //Phong only if vert norms present
+	std::cout << i.getN()[0] << " " << i.getN()[1] << " " << i.getN()[2] << " " << std::endl;
 
 	return true;
 }

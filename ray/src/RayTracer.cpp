@@ -76,7 +76,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 #if VERBOSE
 	std::cerr << "== current depth: " << depth << std::endl;
 #endif
-	if(scene->intersect(r, i)) {
+	if(depth >= 0 && scene->intersect(r, i)) {
 		// YOUR CODE HERE
 
 		// An intersection occurred!  We've got work to do. For now,
@@ -291,7 +291,7 @@ glm::dvec2 hammersley(int n, int N) {
 }
 
 #define AA_DIV 8 // uncomment line 352 to use
-double adaa_eps = 0.0005;
+double adaa_eps = 0.0001;
 int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &val) {
 	if(x1 + adaa_eps >= x2 || y1 + adaa_eps >= y2) return 0;
 
@@ -305,8 +305,10 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 	glm::dvec3 mu(0.0, 0.0, 0.0), sd(0.0, 0.0, 0.0);
 
 	// sample + calculate mean
+	#pragma omp parallel num_threads(this->threads)
+	#pragma omp for
 	for(int i=0; i<samples; i++) {
-		glm::dvec2 s_xy = hammersley(i, samples);
+		glm::dvec2 s_xy = hammersley(i, samples * samples);
 		glm::dvec3 s_c = trace(s_xy[0]*w + x1, s_xy[1]*h + y1);
 		s.push_back(s_c);
 		mu += s_c;
@@ -319,11 +321,13 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 		sd += glm::pow(glm::abs(s_c - mu), glm::dvec3(2.0));
 	}
 	sd *= (1.0/(samples-1));
-	
+
 	// divide?
 	if(glm::length(sd) > aaThresh) {
 		// std::cout << "divide!" << std::endl;
 		mu = glm::dvec3(0.0, 0.0, 0.0);
+		#pragma omp parallel num_threads(this->threads)
+		#pragma omp for collapse(2)
 		for(int i=0; i<2; i++)
 			for(int j=0; j<2; j++) {
 				glm::dvec3 subval;
@@ -349,6 +353,8 @@ int RayTracer::aaImage()
 
 	int sampleCnt = 0;
 
+	// std::cout << "Once?" << std::endl;
+
 	// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
 	#pragma omp parallel num_threads(this->threads)
 	#pragma omp for collapse(2)
@@ -364,6 +370,8 @@ int RayTracer::aaImage()
 			setPixel(i, j, val);
 		}
 	}
+
+	// std::cout << "Twice?" << std::endl;
 
 	return sampleCnt;
 }

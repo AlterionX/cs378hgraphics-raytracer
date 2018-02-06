@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/io.hpp>
 
-#define EPS_BACKUP 0.00000001
+#define EPS_BACKUP 0.00000005
 #define SHADOW_INF 1e18
 
 using namespace std;
@@ -70,8 +70,8 @@ double PointLight::distanceAttenuation(const glm::dvec3& P) const
 
 	// YOUR CODE HERE
 
-	// You'll need to modify this method to attenuate the intensity 
-	// of the light based on the distance between the source and the 
+	// You'll need to modify this method to attenuate the intensity
+	// of the light based on the distance between the source and the
 	// point P.  For now, we assume no attenuation and just return 1.0
 	double d = glm::distance(position, P);
 	return max(min(1.0 / (constantTerm + linearTerm*d + quadraticTerm*d*d), 1.0), 0.0);
@@ -136,4 +136,3 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 }
 
 #define VERBOSE 0
-
