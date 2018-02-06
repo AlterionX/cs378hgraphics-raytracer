@@ -152,8 +152,10 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 }
 
 RayTracer::RayTracer()
-	: scene(nullptr), buffer(0), thresh(0), buffer_width(256), buffer_height(256), m_bBufferReady(false)
+	: scene(nullptr), buffer(0), thresh(0), buffer_width(256), buffer_height(256), m_bBufferReady(false), 
+	  aaMode(RayTracer::DEFAULT_AA)
 {
+	// std::cout << "RAYTRACER BORN" << std::endl;
 }
 
 RayTracer::~RayTracer()
@@ -266,14 +268,18 @@ void RayTracer::traceImage(int w, int h)
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
 
-	//#pragma omp parallel num_threads(this->threads)
-	//#pragma omp for collapse(2)
+	#pragma omp parallel num_threads(this->threads)
+	#pragma omp for collapse(2)
 	for(int i=0; i<w; i++) {
 		for(int j=0; j<h; j++) {
 			tracePixel(i, j);
 			// setPixel(i, j, tracePixel(i, j));
 		}
 	}
+}
+
+void RayTracer::setAAMode(RayTracer::AAMode m) {
+	this->aaMode = m;
 }
 
 glm::dvec2 hammersley(int n, int N) {
@@ -349,7 +355,8 @@ int RayTracer::aaImage()
 
 	int sampleCnt = 0;
 
-	if(aaMode == RayTracer::ADAPTIVE_AA) {
+	if(this->aaMode == RayTracer::ADAPTIVE_AA) {
+		// std::cout << "Adaptive Mode" << std::endl;
 		// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
 		#pragma omp parallel num_threads(this->threads)
 		#pragma omp for collapse(2)
@@ -367,6 +374,7 @@ int RayTracer::aaImage()
 		}
 	}
 	else { // Raytracer::DEFAULT_AA
+		// std::cout << "Default Supersampling Mode" << std::endl;
 		#pragma omp parallel num_threads(this->threads)
 		#pragma omp for collapse(2)
 		for(int i=0; i<buffer_width; i++) {

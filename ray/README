@@ -1,0 +1,15 @@
+1. Your name and the name of your teammate (if any)
+
+	Benjamin Xu:			Triangle intersection, Barycentric, Reflection, Refraction, Threads
+	Supawit Chockchowwat:	Phong shading, Shadow tracing, Anti-aliasings
+
+2. An explanation of any required features that you know are not working completely correctly, but would like to have considered for partial credit
+
+
+
+3. Anything the milestone-specific specs below ask you to include.
+
+	Adaptive Anti-Aliasing:
+		- to activate run "./ray --adaptaa" (the flag need to be right after "./ray")
+		- sampling by pseudorandom sampling (number at each level: samples^2)
+		- have a parameter (adaa_eps) needs to be tuned

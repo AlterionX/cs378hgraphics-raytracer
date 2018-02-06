@@ -141,13 +141,20 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 		i.setMaterial(i_material);
 	}
 	//std::cout << this->parent->normals.size() << std::endl;
-	i.setN((this->parent->normals.size() == 0) ? this->normal : glm::normalize(
+	i.setN((!this->parent->vertNorms) ? this->normal : glm::normalize(
 		glm::dmat3(
 			this->parent->normals[(*this)[0]],
 			this->parent->normals[(*this)[1]],
 			this->parent->normals[(*this)[2]]
 		) * bary
 	)); //Phong only if vert norms present
+	// i.setN((this->parent->normals.size() == 0) ? this->normal : glm::normalize(
+	// 	glm::dmat3(
+	// 		this->parent->normals[(*this)[0]],
+	// 		this->parent->normals[(*this)[1]],
+	// 		this->parent->normals[(*this)[2]]
+	// 	) * bary
+	// )); //Phong only if vert norms present
 	/*std::cout << bary[0] << " " << bary[1] << " " << bary[2] << std::endl;
 	// std::cout << this->normal[0] << " " << this->normal[1] << " " << this->normal[2] << std::endl;
 	// std::cout << i.getN()[0] << " " << i.getN()[1] << " " << i.getN()[2] << " " << std::endl;*/
@@ -163,6 +170,8 @@ void Trimesh::generateNormals()
 	normals.resize(cnt);
 	std::vector<int> numFaces(cnt, 0);
 
+	// std::cout << "generate normal" << std::endl;
+
 	for (auto face : faces) {
 		glm::dvec3 faceNormal = face->getNormal();
 
@@ -176,6 +185,8 @@ void Trimesh::generateNormals()
 		if (numFaces[i])
 			normals[i] /= numFaces[i];
 	}
+	// std::cout << "generate ended: " << std::endl;
 
 	vertNorms = true;
+	// std::cout << (vertNorms ? "bool set" : "hmm?") << std::endl;
 }

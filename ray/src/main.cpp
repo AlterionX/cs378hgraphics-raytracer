@@ -18,8 +18,18 @@ int TraceUI::rayCount[MAX_THREADS];
 //
 // Graphics mode will be substantially slower than text mode because of
 // event handling overhead.
+
+#include <iostream>
 int main(int argc, char** argv)
 {
+	RayTracer::AAMode aaMode = RayTracer::DEFAULT_AA;
+	if (argc > 1 && strcmp(argv[1], "--adaptaa") == 0) {
+		for(int i=1; i<argc-1; i++)
+			argv[i] = argv[i+1];
+		argc--;
+		aaMode = RayTracer::ADAPTIVE_AA;
+	}
+
 	if (argc != 1) {
 		// text mode
 		traceUI = new CommandLineUI(argc, argv);
@@ -34,6 +44,7 @@ int main(int argc, char** argv)
 	}
 
 	theRayTracer = new RayTracer();
+	theRayTracer->setAAMode(RayTracer::ADAPTIVE_AA);
 
 	traceUI->setRayTracer(theRayTracer);
 	return traceUI->run();
