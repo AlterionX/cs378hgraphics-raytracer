@@ -116,9 +116,9 @@ Token* Tokenizer::GetNext() {
   }
 
   if (_printTokens) {
-    std::cout << "Token read: ";
+    // std::cout << "Token read: ";
     T->Print();
-    std::cout << std::endl;
+    // std::cout << std::endl;
   }
 
   return T;

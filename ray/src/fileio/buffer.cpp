@@ -67,7 +67,7 @@ char Buffer::GetCh() {
   char CurrentCh = *PositionInCurrentLine;
 
   if (_printChars) {
-    std::cout << "Read character `" << CurrentCh << "'" << std::endl;
+    // std::cout << "Read character `" << CurrentCh << "'" << std::endl;
   }
 
   return CurrentCh;

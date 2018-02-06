@@ -65,7 +65,7 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 	return col;
 }
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 // Do recursive ray tracing!  You'll want to insert a lot of code here
 // (or places called from here) to handle reflection, refraction, etc etc.
@@ -93,7 +93,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		t = i.getT();
 
 		colorC = m.shade(scene.get(), r, i);
-		// std::cout << depth << "shade :" << colorC << std::endl;
+		std::cout << depth << "shade :" << colorC << std::endl;
 
 		if (m.Recur() && depth > 0) {
 			// double modT = i.getT() - RAY_EPSILON;
@@ -120,7 +120,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					colorC += reflCol;
 				}*/
 				colorC += reflCol;
-				// std::cout << depth << "refl :" << colorC << std::endl;
+				std::cout << depth << "refl :" << colorC << std::endl;
  			}
 			//refraction
 			if (m.Trans() && radicand >= 0) {
@@ -130,9 +130,9 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					glm::dvec3(1.0), ray::REFRACTION
 				);
 				// Order important underneath !!!!
-				colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0);
+				colorC += traceRay(transRay, thresh, depth - 1, transT) /** glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0)*/;
 				// colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::pow(m.kt(i), glm::dvec3(transT)); // glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0);
-				// std::cout << depth << "refr :" << colorC << std::endl;
+				std::cout << depth << "refr :" << colorC << std::endl;
 			}
 		}
 		// std::cout << depth << "res  :" << colorC << std::endl;
@@ -368,7 +368,7 @@ int RayTracer::aaImage()
 				sampleCnt += adaptaa(x1, x2, y1, y2, val);
 				setPixel(i, j, val);
 			}
-		}	
+		}
 	}
 	else { // Raytracer::DEFAULT_AA
 		#pragma omp parallel num_threads(this->threads)
@@ -391,7 +391,7 @@ int RayTracer::aaImage()
 
 				setPixel(i, j, mu);
 			}
-		}	
+		}
 	}
 
 	return sampleCnt;
