@@ -5,11 +5,11 @@
 
 2. An explanation of any required features that you know are not working completely correctly, but would like to have considered for partial credit
 
-
+	The refraction is brighter than what should be present. Most likely, this is due to some aspect of the distance spent inside an object that we mismeasured. There are also several black pixels in the dragon we are unsure of.
 
 3. Anything the milestone-specific specs below ask you to include.
 
 	Adaptive Anti-Aliasing:
-		- to activate run "./ray --adaptaa" (the flag need to be right after "./ray")
+		- to activate run "./ray --adaptaa" (the flag needs to be right after "./ray")
 		- sampling by pseudorandom sampling (number at each level: samples^2)
 		- have a parameter (adaa_eps) needs to be tuned
