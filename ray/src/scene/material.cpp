@@ -33,7 +33,7 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 	// shadowAttenuation()
 	// somewhere in your code in order to compute shadows and light falloff.
 	//	if( debugMode )
-	//		std::cout << "Debugging Phong code..." << std::endl;
+	//	// std::cout << "Debugging Phong code..." << std::endl;
 
 	// When you're iterating through the lights,
 	// you'll want to use code that looks something

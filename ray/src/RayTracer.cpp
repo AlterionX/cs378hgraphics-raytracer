@@ -93,7 +93,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		t = i.getT();
 
 		colorC = m.shade(scene.get(), r, i);
-		std::cout << depth << "shade :" << colorC << std::endl;
+		// std::cout << depth << "shade :" << colorC << std::endl;
 
 		if (m.Recur() && depth > 0) {
 			// double modT = i.getT() - RAY_EPSILON;
@@ -120,7 +120,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					colorC += reflCol;
 				}*/
 				colorC += reflCol;
-				std::cout << depth << "refl :" << colorC << std::endl;
+			// std::cout << depth << "refl :" << colorC << std::endl;
  			}
 			//refraction
 			if (m.Trans() && radicand >= 0) {
@@ -132,7 +132,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				// Order important underneath !!!!
 				colorC += traceRay(transRay, thresh, depth - 1, transT) /** glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0)*/;
 				// colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::pow(m.kt(i), glm::dvec3(transT)); // glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0);
-				std::cout << depth << "refr :" << colorC << std::endl;
+			// std::cout << depth << "refr :" << colorC << std::endl;
 			}
 		}
 		// std::cout << depth << "res  :" << colorC << std::endl;
