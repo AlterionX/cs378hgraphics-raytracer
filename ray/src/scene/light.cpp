@@ -92,7 +92,7 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 {
 	// YOUR CODE HERE:
 	// You should implement shadow-handling code here.
-// std::cout << "P'Light Shadow" << std::endl;
+	// std::cout << "P'Light Shadow" << std::endl;
 
 	// back-up by eps
 	glm::dvec3 pb = p - r.getDirection()*EPS_BACKUP;
@@ -113,7 +113,7 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 			r2l.getDirection()) <= 0
 		) {  // went beyond the point light
 		// std::cout << "too far..." << std::endl;
-			if(is_inside) {
+		if(is_inside) {
 			// std::cout << "Inside transparent surface." << std::endl;
 				sattn = sattn * glm::pow(kt_val, glm::dvec3(glm::distance(position, r2l.getPosition())));
 			}
@@ -122,19 +122,19 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 
 		// check material
 		if(!m.Trans()) {
-		// std::cout << "OPAQUE!!!" << std::endl;
+			// std::cout << "OPAQUE!!!" << std::endl;
 			return glm::dvec3(0.0, 0.0, 0.0);
 		}
 
 		// jump to next intersection
 		if(is_inside) {
-		// std::cout << "Passing through transparent surface." << std::endl;
-		// std::cout << "transmitting with " << kt_val << " " << cur.getT() << std::endl;
-		// std::cout << glm::pow(kt_val, glm::dvec3(cur.getT())) << std::endl;
+			// std::cout << "Passing through transparent surface." << std::endl;
+			// std::cout << "transmitting with " << kt_val << " " << cur.getT() << std::endl;
+			// std::cout << glm::pow(kt_val, glm::dvec3(cur.getT())) << std::endl;
 			sattn = sattn * glm::pow(kt_val, glm::dvec3(cur.getT()));
 		}
 		r2l.setPosition(r2l.at(cur.getT() + EPS_BACKUP));
-	// std::cout << "clean jump: " << sattn << std::endl;
+		// std::cout << "clean jump: " << sattn << std::endl;
 	}
 
 // std::cout << "P'Light Shadow End" << std::endl;

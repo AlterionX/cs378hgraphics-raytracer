@@ -65,7 +65,7 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 	return col;
 }
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 // Do recursive ray tracing!  You'll want to insert a lot of code here
 // (or places called from here) to handle reflection, refraction, etc etc.
@@ -96,9 +96,6 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		// std::cout << depth << "shade :" << colorC << std::endl;
 
 		if (m.Recur() && depth > 0) {
-			// double modT = i.getT() - RAY_EPSILON;
-
-			//Constants
 			//Assuming hitting a face from the back is leaving and from the front is entering
 			auto leaving = glm::dot(i.getN(), r.getDirection()) >= 0;
 			auto eta = leaving ? m.index(i)/1.0 : 1.0/m.index(i); //refractiveIndex
@@ -120,7 +117,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					colorC += reflCol;
 				}*/
 				colorC += reflCol;
-			// std::cout << depth << "refl :" << colorC << std::endl;
+				// std::cout << depth << "refl :" << colorC << std::endl;
  			}
 			//refraction
 			if (m.Trans() && radicand >= 0) {
@@ -130,9 +127,8 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					glm::dvec3(1.0), ray::REFRACTION
 				);
 				// Order important underneath !!!!
-				colorC += traceRay(transRay, thresh, depth - 1, transT) /** glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0)*/;
-				// colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::pow(m.kt(i), glm::dvec3(transT)); // glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0);
-			// std::cout << depth << "refr :" << colorC << std::endl;
+				colorC += traceRay(transRay, thresh, depth - 1, transT) /* * glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0)*/;
+				// std::cout << depth << "refr :" << colorC << std::endl;
 			}
 		}
 		// std::cout << depth << "res  :" << colorC << std::endl;
@@ -270,8 +266,8 @@ void RayTracer::traceImage(int w, int h)
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
 
-	#pragma omp parallel num_threads(this->threads)
-	#pragma omp for collapse(2)
+	//#pragma omp parallel num_threads(this->threads)
+	//#pragma omp for collapse(2)
 	for(int i=0; i<w; i++) {
 		for(int j=0; j<h; j++) {
 			tracePixel(i, j);

@@ -149,8 +149,8 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 		) * bary
 	)); //Phong only if vert norms present
 	/*std::cout << bary[0] << " " << bary[1] << " " << bary[2] << std::endl;
-// std::cout << this->normal[0] << " " << this->normal[1] << " " << this->normal[2] << std::endl;
-// std::cout << i.getN()[0] << " " << i.getN()[1] << " " << i.getN()[2] << " " << std::endl;*/
+	// std::cout << this->normal[0] << " " << this->normal[1] << " " << this->normal[2] << std::endl;
+	// std::cout << i.getN()[0] << " " << i.getN()[1] << " " << i.getN()[2] << " " << std::endl;*/
 
 	return true;
 }
