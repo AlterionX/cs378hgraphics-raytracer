@@ -72,7 +72,7 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 
 			i_out += l_dattn_c * l_sattn_c * l_color * (
 				kd_val * glm::max(0.0, glm::dot(l_ld, isect_n) * (leaving ? -1 : 1)) +
-				ks_val * glm::pow(
+				(leaving ? glm::dvec3(0.0) : ks_val) * glm::pow(
 					glm::dvec3(glm::max(0.0, glm::dot(l_rd, ray_d))),
 					glm::dvec3(sh_val)
 				));
@@ -110,7 +110,28 @@ glm::dvec3 TextureMap::getMappedValue(const glm::dvec2& coord) const
 	// and use these to perform bilinear interpolation
 	// of the values.
 
-	return glm::dvec3(1, 1, 1);
+	double x = coord[0];
+	double y = coord[1];
+
+	if(0.0 <= x && x <= 1.0 && 0.0 <= y && y <= 1.0) {
+		// convert & find grid
+		x *= width; 			y *= height;
+		int ix = (int) x, 	iy = (int) y;
+		x -= ix; 				y -= iy;
+
+		// std::cout << "map -> " << x << " " << y << std::endl;
+
+		// fetch vertex values
+		glm::dvec3 prows[2];
+		for(int i=0; i<2; i++) {
+			auto pl = getPixelAt(i + ix, 0 + iy);
+			auto pr = getPixelAt(i + ix, 1 + iy);
+			prows[i] = x * (pr - pl) + pl;
+		}
+
+		return (y * (prows[1] - prows[0]) + prows[0]) / 255.0;
+	}
+	return glm::dvec3(0.0, 1.0, 0.0);
 }
 
 glm::dvec3 TextureMap::getPixelAt(int x, int y) const
@@ -119,8 +140,17 @@ glm::dvec3 TextureMap::getPixelAt(int x, int y) const
 	//
 	// In order to add texture mapping support to the
 	// raytracer, you need to implement this function.
+	
+	if(0 <= x && x < width && 0 <= y && y < height) {
+		// copied from RayTracer.cpp
+		int idx = ( x + y * width ) * 3;
 
-	return glm::dvec3(1, 1, 1);
+		glm::dvec3 vpix(data[idx + 0], data[idx + 1], data[idx + 2]);
+		// std::cout << x << " " << y << ": return " << vpix << std::endl;
+		// return glm::normalize(vpix);
+		return vpix;
+	}
+	return glm::dvec3(0.0, 0.0, 0.0);
 }
 
 glm::dvec3 MaterialParameter::value(const isect& is) const
