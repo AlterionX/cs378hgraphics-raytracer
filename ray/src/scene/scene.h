@@ -231,6 +231,8 @@ public:
 	void add(Geometry* obj);
 	void add(Light* light);
 
+	void conclude();
+
 	bool intersect(ray& r, isect& i) const;
 
 	auto beginLights() const { return lights.begin(); }
@@ -284,7 +286,7 @@ private:
 	// are exempt from this requirement.
 	BoundingBox sceneBounds;
 
-	KdTree<Geometry>* kdtree;
+	KdTree<std::unique_ptr<Geometry> >* kdtree;
 	bool dirty;
 
 public:

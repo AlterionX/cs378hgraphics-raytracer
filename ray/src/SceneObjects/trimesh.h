@@ -53,6 +53,8 @@ public:
 
 	const char *doubleCheck();
 
+	void conclude();
+
 	void generateNormals();
 
 	bool hasBoundingBoxCapability() const { return true; }

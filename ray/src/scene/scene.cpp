@@ -109,6 +109,16 @@ void Scene::add(Light* light)
 	lights.emplace_back(light);
 }
 
+void Scene::conclude() {
+	if (dirty) {
+		// if (kdtree != NULL) {
+		// 	delete kdtree;
+		// }
+		kdtree = new KdTree<std::unique_ptr<Geometry> >(this->objects);
+		dirty = true;
+	}
+}
+
 #define KDTREE_VISUAL 0
 // Get any intersection with an object.  Return information about the
 // intersection through the reference parameter.
@@ -117,14 +127,9 @@ bool Scene::intersect(ray& r, isect& i) const {
 	double tmax = 0.0;
 	bool have_one = false;
 
-	if (dirty) {
-		if (kdtree != NULL) {
-			delete kdtree;
-		}
-		kdtree = new KdTree<Geometry*>(this->objects);
-	}
-
-	for(const auto& obj : kdtree.intersectList()) {
+	std::vector<std::unique_ptr<Geometry> > potenlist;
+	kdtree->intersectList(r, potenlist);
+	for(const auto& obj : potenlist) {
 		isect cur;
 		if( obj->intersect(r, cur) ) {
 			if(!have_one || (cur.getT() < i.getT())) {

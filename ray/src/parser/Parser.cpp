@@ -82,6 +82,7 @@ Scene* Parser::parseScene()
          _tokenizer.Read( SEMICOLON );
          break;
       case EOFSYM:
+         scene->conclude();
          return scene;
       default:
          throw SyntaxErrorException( "Expected: geometry, camera, or light information", _tokenizer );
@@ -680,6 +681,7 @@ void Parser::parseTrimesh(Scene* scene, TransformNode* transform, const Material
         if( generateNormals )
           tmesh->generateNormals();
 
+        tmesh->conclude();
 
         if ((error = tmesh->doubleCheck()))
           throw ParserException(error);

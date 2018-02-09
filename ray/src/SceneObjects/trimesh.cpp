@@ -6,6 +6,7 @@
 #include <cmath>
 #include "../ui/TraceUI.h"
 #include "../util.h"
+#include "../scene/kdTree.h"
 
 #include <iostream>
 
@@ -70,17 +71,23 @@ const char* Trimesh::doubleCheck()
 	return 0;
 }
 
+void Trimesh::conclude() {
+	if (dirty) {
+		// if (kdtree != NULL) {
+		// 	delete kdtree;
+		// }
+		kdtree = new KdTree<TrimeshFace*>(this->faces);
+		dirty = true;
+	}
+}
+
 bool Trimesh::intersectLocal(ray& r, isect& i) const
 {
-	if (dirty) {
-		if (kdtree != NULL) {
-			delete kdtree;
-		}
-		kdtree = new KdTree<TrimeshFace*>(this->faces);
-	}
 
 	bool have_one = false;
-	for (auto face : kdtree.intersectList()) {
+	std::vector<TrimeshFace*> potenlist;
+	kdtree->intersectList(r, potenlist);
+	for (auto face : potenlist) {
 		isect cur;
 		if (face->intersectLocal(r, cur)) {
 			if (!have_one || (cur.getT() < i.getT())) {
