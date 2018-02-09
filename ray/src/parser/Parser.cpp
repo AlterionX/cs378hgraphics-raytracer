@@ -33,7 +33,7 @@ Scene* Parser::parseScene()
   if( versionNumber->value() > 1.1 )
   {
     ostringstream ost;
-    ost << "SBT-raytracer version number " << versionNumber->value() << 
+    ost << "SBT-raytracer version number " << versionNumber->value() <<
       " too high; only able to parse v1.1 and below.";
     throw ParserException( ost.str() );
   }
@@ -114,7 +114,7 @@ void Parser::parseCamera( Scene* scene )
 
       case QUATERNIAN:
         quaternian = parseVec4dExpression();
-        scene->getCamera().setLook( 
+        scene->getCamera().setLook(
           quaternian[0], quaternian[1], quaternian[2], quaternian[3] );
         break;
 
@@ -270,7 +270,7 @@ void Parser::parseTranslate(Scene* scene, TransformNode* transform, const Materi
   _tokenizer.Read( COMMA );
 
   // Parse child geometry
-  parseTransformableElement( scene, 
+  parseTransformableElement( scene,
     transform->createChild(glm::translate(glm::dvec3(x, y, z))), mat );
 
   _tokenizer.Read( RPAREN );
@@ -293,7 +293,7 @@ void Parser::parseRotate(Scene* scene, TransformNode* transform, const Material&
   _tokenizer.Read( COMMA );
 
   // Parse child geometry
-  parseTransformableElement( scene, 
+  parseTransformableElement( scene,
     transform->createChild(glm::rotate(w, glm::dvec3(x, y, z))), mat );
 
   _tokenizer.Read( RPAREN );
@@ -327,7 +327,7 @@ void Parser::parseScale(Scene* scene, TransformNode* transform, const Material& 
   }
 
   // Parse child geometry
-  parseTransformableElement( scene, 
+  parseTransformableElement( scene,
     transform->createChild(glm::scale(glm::dvec3(x, y, z))), mat );
 
   _tokenizer.Read( RPAREN );
@@ -351,7 +351,7 @@ void Parser::parseTransform(Scene* scene, TransformNode* transform, const Materi
   glm::dvec4 row4 = parseVec4d();
   _tokenizer.Read( COMMA );
 
-  parseTransformableElement( scene, 
+  parseTransformableElement( scene,
     transform->createChild( glm::transpose(glm::dmat4x4(row1, row2, row3, row4)) ), mat );
 
   _tokenizer.Read( RPAREN );
@@ -389,7 +389,7 @@ void Parser::parseSphere(Scene* scene, TransformNode* transform, const Material&
         return;
       default:
         throw SyntaxErrorException( "Expected: sphere attributes", _tokenizer );
-        
+
     }
   }
 }
@@ -423,7 +423,7 @@ void Parser::parseBox(Scene* scene, TransformNode* transform, const Material& ma
         return;
       default:
         throw SyntaxErrorException( "Expected: box attributes", _tokenizer );
-        
+
     }
   }
 }
@@ -457,7 +457,7 @@ void Parser::parseSquare(Scene* scene, TransformNode* transform, const Material&
         return;
       default:
         throw SyntaxErrorException( "Expected: square attributes", _tokenizer );
-        
+
     }
   }
 }
@@ -536,7 +536,7 @@ void Parser::parseCone(Scene* scene, TransformNode* transform, const Material& m
         break;
       case RBRACE:
         _tokenizer.Read( RBRACE );
-        cone = new Cone( scene, newMat ? newMat : new Material(mat), 
+        cone = new Cone( scene, newMat ? newMat : new Material(mat),
           height, bottomRadius, topRadius, capped );
         cone->setTransform( transform );
         scene->add( cone );
@@ -671,7 +671,7 @@ void Parser::parseTrimesh(Scene* scene, TransformNode* transform, const Material
           if( !tmesh->addFace( (*vitr)[0], (*vitr)[1], (*vitr)[2] ) )
           {
             ostringstream oss;
-            oss << "Bad face in trimesh: (" << (*vitr)[0] << ", " << (*vitr)[1] << 
+            oss << "Bad face in trimesh: (" << (*vitr)[0] << ", " << (*vitr)[1] <<
               ", " << (*vitr)[2] << ")";
             throw ParserException( oss.str() );
           }
@@ -741,7 +741,7 @@ PointLight* Parser::parsePointLight( Scene* scene )
   float quadraticAttenuationCoefficient = 1.0f;
 
   bool hasPosition( false ), hasColor( false );
-  
+
   _tokenizer.Read( POINT_LIGHT );
   _tokenizer.Read( LBRACE );
 
@@ -771,7 +771,7 @@ PointLight* Parser::parsePointLight( Scene* scene )
        case LINEAR_ATTENUATION_COEFF:
          linearAttenuationCoefficient = parseScalarExpression();
 		 break;
-         
+
        case QUADRATIC_ATTENUATION_COEFF:
          quadraticAttenuationCoefficient = parseScalarExpression();
 		 break;
@@ -782,12 +782,12 @@ PointLight* Parser::parsePointLight( Scene* scene )
          if( !hasPosition )
            throw SyntaxErrorException( "Expected: 'position'", _tokenizer );
          _tokenizer.Read( RBRACE );
-         return new PointLight( scene, position, color, constantAttenuationCoefficient, 
+         return new PointLight( scene, position, color, constantAttenuationCoefficient,
            linearAttenuationCoefficient, quadraticAttenuationCoefficient );
 
         default:
-          throw SyntaxErrorException( 
-			  "expecting 'position' or 'color' attribute, or 'constant_attenuation_coeff', 'linear_attenuation_coeff', or 'quadratic_attenuation_coeff'", 
+          throw SyntaxErrorException(
+			  "expecting 'position' or 'color' attribute, or 'constant_attenuation_coeff', 'linear_attenuation_coeff', or 'quadratic_attenuation_coeff'",
             _tokenizer );
      }
   }
@@ -831,7 +831,7 @@ DirectionalLight* Parser::parseDirectionalLight( Scene* scene )
           return new DirectionalLight( scene, direction, color );
 
         default:
-          throw SyntaxErrorException( "expecting 'position' or 'color' attribute", 
+          throw SyntaxErrorException( "expecting 'position' or 'color' attribute",
             _tokenizer );
      }
   }
@@ -853,7 +853,7 @@ bool Parser::parseBooleanExpression()
 {
   _tokenizer.Get();
   _tokenizer.Read(EQUALS);
-  bool value( parseBoolean() ); 
+  bool value( parseBoolean() );
   _tokenizer.CondRead(SEMICOLON);
   return value;
 }
@@ -958,8 +958,8 @@ glm::dvec3 Parser::parseVec3d()
   unique_ptr<Token> value3( _tokenizer.Read( SCALAR ) );
   _tokenizer.Read( RPAREN );
 
-  return glm::dvec3( value1->value(), 
-    value2->value(), 
+  return glm::dvec3( value1->value(),
+    value2->value(),
     value3->value() );
 }
 
@@ -975,8 +975,8 @@ glm::dvec4 Parser::parseVec4d()
   unique_ptr<Token> value4( _tokenizer.Read( SCALAR ) );
   _tokenizer.Read( RPAREN );
 
-  return glm::dvec4( value1->value(), 
-    value2->value(), 
+  return glm::dvec4( value1->value(),
+    value2->value(),
     value3->value(),
     value4->value() );
 }
@@ -1019,7 +1019,7 @@ Material* Parser::parseMaterial( Scene* scene, const Material& parent )
       }
 
       case DIFFUSE:
-        mat->setDiffuse( parseVec3dMaterialParameter(scene) ); 
+        mat->setDiffuse( parseVec3dMaterialParameter(scene) );
         break;
 
       case REFLECTIVE:

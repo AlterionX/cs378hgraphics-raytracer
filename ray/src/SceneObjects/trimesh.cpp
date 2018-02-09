@@ -133,7 +133,7 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 	i.setObject(this);
 	i.setT(t);
 	i.setBary(bary);
-	if (this->parent->materials.size() != 0) {
+	if (this->parent->materials.size()) {
 		Material i_material = Material();
 		i_material += bary[0] * (*(this->parent->materials[(*this)[0]]));
 		i_material += bary[1] * (*(this->parent->materials[(*this)[1]]));
@@ -141,23 +141,27 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 		i.setMaterial(i_material);
 	}
 	//std::cout << this->parent->normals.size() << std::endl;
-	i.setN((!this->parent->vertNorms) ? this->normal : glm::normalize(
-		glm::dmat3(
-			this->parent->normals[(*this)[0]],
-			this->parent->normals[(*this)[1]],
-			this->parent->normals[(*this)[2]]
-		) * bary
-	)); //Phong only if vert norms present
-	// i.setN((this->parent->normals.size() == 0) ? this->normal : glm::normalize(
-	// 	glm::dmat3(
-	// 		this->parent->normals[(*this)[0]],
-	// 		this->parent->normals[(*this)[1]],
-	// 		this->parent->normals[(*this)[2]]
-	// 	) * bary
-	// )); //Phong only if vert norms present
-	/*std::cout << bary[0] << " " << bary[1] << " " << bary[2] << std::endl;
-	// std::cout << this->normal[0] << " " << this->normal[1] << " " << this->normal[2] << std::endl;
-	// std::cout << i.getN()[0] << " " << i.getN()[1] << " " << i.getN()[2] << " " << std::endl;*/
+	if (!this->parent->vertNorms) {
+		i.setN(glm::normalize(
+			glm::dmat3(
+				this->parent->normals[(*this)[0]],
+				this->parent->normals[(*this)[1]],
+				this->parent->normals[(*this)[2]]
+			) * bary
+		));
+	} else {
+		i.setN(this->normal);
+	}
+	// Theoretically working uv code
+	/*if (this->uvCoords.size()) {
+		i.setUVCoordinates(
+			glm::dmat3(
+				this->parent->uvCoords[(*this)[0]],
+				this->parent->uvCoords[(*this)[1]],
+				this->parent->uvCoords[(*this)[2]]
+			) * bary
+		);
+	}*/
 
 	return true;
 }

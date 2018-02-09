@@ -72,7 +72,7 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, double& t )
 {
 	isect i;
-	glm::dvec3 colorC;
+	auto colorC = glm::dvec3(0.0, 0.0, 0.0);
 #if VERBOSE
 	std::cerr << "== current depth: " << depth << std::endl;
 #endif
@@ -117,7 +117,6 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					colorC += reflCol;
 				}*/
 				colorC += reflCol;
-				// std::cout << depth << "refl :" << colorC << std::endl;
  			}
 			//refraction
 			if (m.Trans() && radicand >= 0) {
@@ -128,22 +127,13 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				);
 				// Order important underneath !!!!
 				colorC += traceRay(transRay, thresh, depth - 1, transT) /* * glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0)*/;
-				// std::cout << depth << "refr :" << colorC << std::endl;
 			}
 		}
-		// std::cout << depth << "res  :" << colorC << std::endl;
-
 	} else {
 		// No intersection.  This ray travels to infinity, so we color
-		// it according to the background color, which in this (simple) case
-		// is just black.
-		//
-		// FIXME: Add CubeMap support here.
-		// TIPS: CubeMap object can be fetched from traceUI->getCubeMap();
-		//       Check traceUI->cubeMap() to see if cubeMap is loaded
-		//       and enabled.
-
-		colorC = glm::dvec3(0.0, 0.0, 0.0);
+		// it according to the background color.
+		// Check for the cube map, see if it is enabled.
+		if (traceUI->cubeMap()) colorC = traceUI->getCubeMap()->getColor(r);
 	}
 #if VERBOSE
 	std::cerr << "== depth: " << depth+1 << " done, returning: " << colorC << std::endl;
@@ -152,7 +142,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 }
 
 RayTracer::RayTracer()
-	: scene(nullptr), buffer(0), thresh(0), buffer_width(256), buffer_height(256), m_bBufferReady(false), 
+	: scene(nullptr), buffer(0), thresh(0), buffer_width(256), buffer_height(256), m_bBufferReady(false),
 	  aaMode(RayTracer::DEFAULT_AA)
 {
 	// std::cout << "RAYTRACER BORN" << std::endl;
@@ -268,8 +258,8 @@ void RayTracer::traceImage(int w, int h)
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
 
-	#pragma omp parallel num_threads(this->threads)
-	#pragma omp for collapse(2)
+	//#pragma omp parallel num_threads(this->threads)
+	//#pragma omp for collapse(2)
 	for(int i=0; i<w; i++) {
 		for(int j=0; j<h; j++) {
 			tracePixel(i, j);
