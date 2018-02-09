@@ -99,7 +99,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			//Assuming hitting a face from the back is leaving and from the front is entering
 			auto leaving = glm::dot(i.getN(), r.getDirection()) >= 0;
 			auto eta = leaving ? m.index(i)/1.0 : 1.0/m.index(i); //refractiveIndex
-			auto kt = leaving ? glm::dvec3(1) : m.kt(i);
+			auto kt = leaving ? m.kt(i) : glm::dvec3(1);
 			auto normal = (leaving ? -1.0 : 1.0) * i.getN();
 			auto c = -1 * glm::dot(normal, r.getDirection());
 			auto radicand = 1 - eta * eta * (1 - c * c);
