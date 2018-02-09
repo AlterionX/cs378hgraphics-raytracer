@@ -54,7 +54,7 @@ void Geometry::ComputeBoundingBox() {
     // and use those to find a new bounding box.
 
     BoundingBox localBounds = ComputeLocalBoundingBox();
-        
+
     glm::dvec3 min = localBounds.getMin();
     glm::dvec3 max = localBounds.getMax();
 
@@ -84,12 +84,12 @@ void Geometry::ComputeBoundingBox() {
     v = transform->localToGlobalCoords( glm::dvec4(max[0], max[1], max[2], 1) );
     newMax = glm::max(newMax, v);
     newMin = glm::min(newMin, v);
-		
+
     bounds.setMax(glm::dvec3(newMax));
     bounds.setMin(glm::dvec3(newMin));
 }
 
-Scene::Scene()
+Scene::Scene(): kdtree(NULL), dirty(true)
 {
 }
 
@@ -101,6 +101,7 @@ void Scene::add(Geometry* obj) {
 	obj->ComputeBoundingBox();
 	sceneBounds.merge(obj->getBoundingBox());
 	objects.emplace_back(obj);
+	dirty = true;
 }
 
 void Scene::add(Light* light)
@@ -108,17 +109,22 @@ void Scene::add(Light* light)
 	lights.emplace_back(light);
 }
 
-
-// Get any intersection with an object.  Return information about the 
+#define KDTREE_VISUAL 0
+// Get any intersection with an object.  Return information about the
 // intersection through the reference parameter.
 bool Scene::intersect(ray& r, isect& i) const {
 	double tmin = 0.0;
 	double tmax = 0.0;
 	bool have_one = false;
 
-	// TODO: call KdTree to get list
+	if (dirty) {
+		if (kdtree != NULL) {
+			delete kdtree;
+		}
+		kdtree = new KdTree<Geometry*>(this->objects);
+	}
 
-	for(const auto& obj : objects) {
+	for(const auto& obj : kdtree.intersectList()) {
 		isect cur;
 		if( obj->intersect(r, cur) ) {
 			if(!have_one || (cur.getT() < i.getT())) {
@@ -127,6 +133,16 @@ bool Scene::intersect(ray& r, isect& i) const {
 			}
 		}
 	}
+	#if KDTREE_VISUAL
+	{
+		if( kdtree->intersect(r, cur) ) {
+			if(!have_one || (cur.getT() < i.getT())) {
+				i = cur;
+				have_one = true;
+			}
+		}
+	}
+	#endif
 	if(!have_one)
 		i.setT(1000.0);
 	// if debugging,
@@ -143,5 +159,3 @@ TextureMap* Scene::getTexture(string name) {
 	}
 	return itr->second.get();
 }
-
-

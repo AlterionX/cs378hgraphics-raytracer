@@ -32,7 +32,8 @@ public:
 	Trimesh(Scene *scene, Material *mat, TransformNode *transform)
 	        : MaterialSceneObject(scene, mat),
 	          displayListWithMaterials(0),
-	          displayListWithoutMaterials(0)
+	          displayListWithoutMaterials(0),
+						kdtree(NULL)
 	{
 		this->transform = transform;
 		vertNorms = false;
@@ -80,6 +81,10 @@ protected:
 	                 bool actualTextures) const;
 	mutable int displayListWithMaterials;
 	mutable int displayListWithoutMaterials;
+
+private:
+	KdTree<TrimeshFace*>* kdtree;
+	bool dirty = true;
 };
 
 class TrimeshFace : public MaterialSceneObject {

@@ -72,8 +72,15 @@ const char* Trimesh::doubleCheck()
 
 bool Trimesh::intersectLocal(ray& r, isect& i) const
 {
+	if (dirty) {
+		if (kdtree != NULL) {
+			delete kdtree;
+		}
+		kdtree = new KdTree<TrimeshFace*>(this->faces);
+	}
+
 	bool have_one = false;
-	for (auto face : faces) {
+	for (auto face : kdtree.intersectList()) {
 		isect cur;
 		if (face->intersectLocal(r, cur)) {
 			if (!have_one || (cur.getT() < i.getT())) {
@@ -140,7 +147,6 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 		i_material += bary[2] * (*(this->parent->materials[(*this)[2]]));
 		i.setMaterial(i_material);
 	}
-	//std::cout << this->parent->normals.size() << std::endl;
 	if (!this->parent->vertNorms) {
 		i.setN(glm::normalize(
 			glm::dmat3(

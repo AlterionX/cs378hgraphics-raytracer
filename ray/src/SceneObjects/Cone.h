@@ -7,8 +7,8 @@ class Cone
 	: public MaterialSceneObject
 {
 public:
-	Cone( Scene *scene, Material *mat, 
-			double h = 1.0, double br = 1.0, double tr = 0.0, 
+	Cone( Scene *scene, Material *mat,
+			double h = 1.0, double br = 1.0, double tr = 0.0,
 			bool cap = false )
 		: MaterialSceneObject( scene, mat )
 	{
@@ -39,15 +39,15 @@ public:
 	virtual bool intersectLocal(ray& r, isect& i ) const;
 	virtual bool hasBoundingBoxCapability() const { return true; }
 
-    virtual BoundingBox ComputeLocalBoundingBox()
-    {
-        BoundingBox localbounds;
+  virtual BoundingBox ComputeLocalBoundingBox()
+  {
+    BoundingBox localbounds;
 		double biggest_radius = (b_radius > t_radius)?(b_radius):(t_radius);
 
 		localbounds.setMin(glm::dvec3(-biggest_radius, -biggest_radius, (height < 0.0f)?(height):(0.0f)));
 		localbounds.setMax(glm::dvec3(biggest_radius, biggest_radius, (height < 0.0f)?(0.0f):(height)));
-        return localbounds;
-    }
+    return localbounds;
+  }
 
 	bool intersectBody( const ray& r, isect& i ) const;
 	bool intersectCaps( const ray& r, isect& i ) const;
@@ -55,7 +55,7 @@ public:
 protected:
 	bool isGoodRoot(glm::dvec3 root) const;
 	double radiusAt(double h) const;
-    
+
 	bool capped;
 	double height;
 	double b_radius;

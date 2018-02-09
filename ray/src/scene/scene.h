@@ -285,6 +285,7 @@ private:
 	BoundingBox sceneBounds;
 
 	KdTree<Geometry>* kdtree;
+	bool dirty;
 
 public:
 	// This is used for debugging purposes only.
