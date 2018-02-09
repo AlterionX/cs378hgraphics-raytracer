@@ -34,7 +34,7 @@ glm::dvec3 DirectionalLight::shadowAttenuation(const ray& r, const glm::dvec3& p
 		// std::cout << "shadow hit: " << r2l.getPosition() << " -> " << r2l.at(cur.getT()) << std::endl;
 		const Material& m = cur.getMaterial();
 		const glm::dvec3 kt_val = m.kt(cur);
-		bool is_inside = glm::dot(cur.getN(), r2l.getDirection()) >= 0;
+		bool is_inside = glm::dot(cur.getN(), r2l.getDirection()) > 0;
 
 		// check material
 		if(!m.Trans()) {
@@ -48,7 +48,7 @@ glm::dvec3 DirectionalLight::shadowAttenuation(const ray& r, const glm::dvec3& p
 			sattn = sattn * glm::pow(kt_val, glm::dvec3(cur.getT()));
 		}
 		is_inside = !is_inside;
-		r2l.setPosition(r2l.at(cur.getT()));
+		r2l.setPosition(r2l.at(cur.getT() + EPS_BACKUP));
 		// std::cout << "clean jump: " << sattn << std::endl;
 	}
 
@@ -112,10 +112,10 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 			glm::normalize(position - r2l.at(cur.getT())),
 			r2l.getDirection()) <= 0
 		) {  // went beyond the point light
-		// std::cout << "too far..." << std::endl;
-		if(is_inside) {
-			// std::cout << "Inside transparent surface." << std::endl;
-				sattn = sattn * glm::pow(kt_val, glm::dvec3(glm::distance(position, r2l.getPosition())));
+			// std::cout << "too far..." << std::endl;
+			if(is_inside) {
+				// std::cout << "Inside transparent surface." << std::endl;
+					sattn = sattn * glm::pow(kt_val, glm::dvec3(glm::distance(position, r2l.getPosition())));
 			}
 			break;
 		}

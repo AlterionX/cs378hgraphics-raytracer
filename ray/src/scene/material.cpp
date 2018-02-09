@@ -116,7 +116,7 @@ glm::dvec3 TextureMap::getMappedValue(const glm::dvec2& coord) const
 	if(0.0 <= x && x <= 1.0 && 0.0 <= y && y <= 1.0) {
 		// convert & find grid
 		x *= width; 			y *= height;
-		int ix = (int) x, 	iy = (int) y;
+		int ix = (int) x, 		iy = (int) y;
 		x -= ix; 				y -= iy;
 
 		// std::cout << "map -> " << x << " " << y << std::endl;

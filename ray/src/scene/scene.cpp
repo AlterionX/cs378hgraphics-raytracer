@@ -114,7 +114,7 @@ void Scene::conclude() {
 		// if (kdtree != NULL) {
 		// 	delete kdtree;
 		// }
-		kdtree = new KdTree<std::unique_ptr<Geometry> >(this->objects);
+		kdtree = new KdTree<std::unique_ptr<Geometry> >(&this->objects);
 		dirty = true;
 	}
 }
@@ -127,27 +127,31 @@ bool Scene::intersect(ray& r, isect& i) const {
 	double tmax = 0.0;
 	bool have_one = false;
 
-	std::vector<std::unique_ptr<Geometry> > potenlist;
+	std::vector<int> potenlist;
 	kdtree->intersectList(r, potenlist);
-	for(const auto& obj : potenlist) {
+	// std::cout << "scene: " << potenlist.size() << " to check" << std::endl;
+	for(const auto& obj_i : potenlist) {
+		// std::cout << "scene check: " << obj_i << std::endl;
+		auto &obj = this->objects[obj_i];
 		isect cur;
 		if( obj->intersect(r, cur) ) {
+			// std::cout << "HIT" << std::endl;
 			if(!have_one || (cur.getT() < i.getT())) {
 				i = cur;
 				have_one = true;
 			}
 		}
 	}
-	#if KDTREE_VISUAL
-	{
-		if( kdtree->intersect(r, cur) ) {
-			if(!have_one || (cur.getT() < i.getT())) {
-				i = cur;
-				have_one = true;
-			}
-		}
-	}
-	#endif
+	// #if KDTREE_VISUAL
+	// {
+	// 	if( kdtree->intersect(r, cur) ) {
+	// 		if(!have_one || (cur.getT() < i.getT())) {
+	// 			i = cur;
+	// 			have_one = true;
+	// 		}
+	// 	}
+	// }
+	// #endif
 	if(!have_one)
 		i.setT(1000.0);
 	// if debugging,

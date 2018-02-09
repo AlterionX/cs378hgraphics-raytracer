@@ -76,20 +76,23 @@ void Trimesh::conclude() {
 		// if (kdtree != NULL) {
 		// 	delete kdtree;
 		// }
-		kdtree = new KdTree<TrimeshFace*>(this->faces);
+		kdtree = new KdTree<TrimeshFace*>(&this->faces);
 		dirty = true;
 	}
 }
 
 bool Trimesh::intersectLocal(ray& r, isect& i) const
 {
-
 	bool have_one = false;
-	std::vector<TrimeshFace*> potenlist;
+	std::vector<int> potenlist;
 	kdtree->intersectList(r, potenlist);
-	for (auto face : potenlist) {
+	// std::cout << "trimesh: " << potenlist.size() << " to check" << std::endl;
+	for (auto face_i : potenlist) {
+		// std::cout << "trimesh check: " << face_i << std::endl;
+		auto &face = this->faces[face_i];
 		isect cur;
 		if (face->intersectLocal(r, cur)) {
+			// std::cout << "HIT FACE" << std::endl;
 			if (!have_one || (cur.getT() < i.getT())) {
 				i = cur;
 				have_one = true;
@@ -142,7 +145,6 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 	if (ZCHK(faceArea)) return false;
 	glm::dvec3 bary = glm::dvec3(baryU/faceArea, baryV/faceArea, 0);
 	bary[2] = 1 - bary[0] - bary[1];
-
 	//Fill isect with known
 	i.setObject(this);
 	i.setT(t);
@@ -154,7 +156,7 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 		i_material += bary[2] * (*(this->parent->materials[(*this)[2]]));
 		i.setMaterial(i_material);
 	}
-	if (!this->parent->vertNorms) {
+	if (this->parent->normals.size() != 0) { //!this->parent->vertNorms) {
 		i.setN(glm::normalize(
 			glm::dmat3(
 				this->parent->normals[(*this)[0]],
@@ -175,6 +177,7 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 			) * bary
 		);
 	}*/
+	
 
 	return true;
 }

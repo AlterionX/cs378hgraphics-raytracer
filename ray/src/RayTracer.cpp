@@ -258,10 +258,11 @@ void RayTracer::traceImage(int w, int h)
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
 
-	//#pragma omp parallel num_threads(this->threads)
-	//#pragma omp for collapse(2)
+	#pragma omp parallel num_threads(this->threads)
+	#pragma omp for collapse(2)
 	for(int i=0; i<w; i++) {
 		for(int j=0; j<h; j++) {
+			// std::cout << "done " << i << ", " << j << std::endl;
 			tracePixel(i, j);
 			// setPixel(i, j, tracePixel(i, j));
 		}
