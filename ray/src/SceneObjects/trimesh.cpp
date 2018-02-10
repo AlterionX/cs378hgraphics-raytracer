@@ -123,6 +123,7 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 	//assume counter clockwise
 	//plane intersection
 	double t = glm::dot(this->normal, r.getDirection());
+	//if (r.type() == ray::VISIBILITY && BTTC(t)) return false;
 	if (ZCHK(t)) return false;
 	t = glm::dot(verts[0] - r.getPosition(), this->normal) / t;
 	if (BTTC(t)) return false;
@@ -177,7 +178,7 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 			) * bary
 		);
 	}*/
-	
+
 
 	return true;
 }

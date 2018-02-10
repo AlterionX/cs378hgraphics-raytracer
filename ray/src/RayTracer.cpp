@@ -116,17 +116,20 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				/*if (radicand < 0) {
 					colorC += reflCol;
 				}*/
+				if (leaving) {
+					 reflCol *= glm::max(glm::min(glm::pow(kt, glm::dvec3(reflT)), 1.0), 0.0);
+				}
 				colorC += reflCol;
  			}
 			//refraction
 			if (m.Trans() && radicand >= 0) {
 				double transT;
-				ray transRay(r.at(i.getT()), // (leaving ? RAY_EPSILON : 0)
+				ray transRay(r.at(i.getT() + RAY_EPSILON),
 				 	eta * r.getDirection() + (eta * c - glm::sqrt(radicand)) * normal,
 					glm::dvec3(1.0), ray::REFRACTION
 				);
 				// Order important underneath !!!!
-				colorC += traceRay(transRay, thresh, depth - 1, transT) /* * glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(transT)), 1.0), 0.0)*/;
+				colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::max(glm::min(glm::pow(kt, glm::dvec3(transT)), 1.0), 0.0);
 			}
 		}
 	} else {

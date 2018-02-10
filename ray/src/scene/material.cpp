@@ -70,12 +70,16 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 			const glm::dvec3 l_rd = l_ld - 2*(glm::dot(l_ld, isect_n))*isect_n;
 			const auto leaving = (glm::dot(isect_n, ray_d) > 0) && (r.type() == ray::REFRACTION);
 
-			i_out += l_dattn_c * l_sattn_c * l_color * (
-				kd_val * glm::max(0.0, glm::dot(l_ld, isect_n) * (leaving ? -1 : 1)) +
-				(leaving ? glm::dvec3(0.0) : ks_val) * glm::pow(
+			const glm::dvec3 s_comp = /*leaving
+				? glm::dvec3(0.0)
+				:*/ (ks_val * glm::pow(
 					glm::dvec3(glm::max(0.0, glm::dot(l_rd, ray_d))),
 					glm::dvec3(sh_val)
-				));
+				)
+			);
+			const glm::dvec3 d_comp = kd_val * glm::max(0.0, glm::dot(l_ld, isect_n * (leaving ? -1.0 : 1.0)));
+
+			i_out += l_dattn_c * l_sattn_c * l_color * (d_comp + s_comp);
 		// }
 	}
 
@@ -140,7 +144,7 @@ glm::dvec3 TextureMap::getPixelAt(int x, int y) const
 	//
 	// In order to add texture mapping support to the
 	// raytracer, you need to implement this function.
-	
+
 	if(0 <= x && x < width && 0 <= y && y < height) {
 		// copied from RayTracer.cpp
 		int idx = ( x + y * width ) * 3;

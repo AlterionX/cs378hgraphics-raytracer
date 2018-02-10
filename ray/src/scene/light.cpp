@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/io.hpp>
 
-#define EPS_BACKUP 0.0000001
+#define EPS_BACKUP 0.0000000001
 #define SHADOW_INF 1e18
 
 using namespace std;
