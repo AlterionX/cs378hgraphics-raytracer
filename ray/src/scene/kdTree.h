@@ -15,7 +15,7 @@
 // #include "scene.h"
 // #include "material.h"
 
-template <typename T> 
+template <typename T>
 class KdTree {
 public:
 
@@ -54,7 +54,7 @@ public:
 			// sort the list with middle point of bounding box
 			auto idxs = getRange(0, indexes.size());
 			std::sort(idxs.begin(), idxs.end(),
-				[=](const int a, const int b) { 
+				[=](const int a, const int b) {
 					const BoundingBox box_a = (*its)[indexes[a]]->getBoundingBox();
 					const BoundingBox box_b = (*its)[indexes[b]]->getBoundingBox();
 
@@ -65,12 +65,12 @@ public:
 			// split the list in half
 			int mid = indexes.size()/2;
 			std::vector<int> it_split[2];
-			for(int i=0; i<indexes.size(); i++) 
+			for(int i=0; i<indexes.size(); i++)
 				it_split[i < mid ? 0 : 1].push_back(indexes[idxs[i]]);
 
 			// get children
 			// std::cout << "split: "; for(int i=0; i<2; i++) {for(auto x: it_split[i]) std::cout << x << " "; std::cout << " / ";} std::cout << std::endl;
-			for(int i=0; i<2; i++) 
+			for(int i=0; i<2; i++)
 				child[i] = new KdTree<T>(its, it_split[i]);
 		}
 	}
@@ -101,7 +101,7 @@ public:
 		if(bound.intersect(r, tmin, tmax)) {
 			if(it_idxs.size() > 0) {
 				for(int it: it_idxs) {
-					hits.push_back(it);	
+					hits.push_back(it);
 					have_one = true;
 				}
 			}

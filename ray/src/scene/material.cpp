@@ -112,7 +112,7 @@ glm::dvec3 TextureMap::getMappedValue(const glm::dvec2& coord) const
 
 	if(0.0 <= x && x <= 1.0 && 0.0 <= y && y <= 1.0) {
 		// convert & find grid
-		x *= width; 			y *= height;
+		x *= width - 1; 			y *= height - 1;
 		int ix = (int) x, 		iy = (int) y;
 		x -= ix; 				y -= iy;
 
@@ -120,13 +120,13 @@ glm::dvec3 TextureMap::getMappedValue(const glm::dvec2& coord) const
 
 		// fetch vertex values
 		glm::dvec3 prows[2];
-		for(int i=0; i<2; i++) {
+		for(int i = 0; i < 2; i++) {
 			auto pl = getPixelAt(i + ix, 0 + iy);
 			auto pr = getPixelAt(i + ix, 1 + iy);
-			prows[i] = x * (pr - pl) + pl;
+			prows[i] = y * (pr - pl) + pl;
 		}
 
-		return (y * (prows[1] - prows[0]) + prows[0]) / 255.0;
+		return (x * (prows[1] - prows[0]) + prows[0]) / 255.0;
 	}
 	return glm::dvec3(0.0, 1.0, 0.0);
 }
