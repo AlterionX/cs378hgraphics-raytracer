@@ -29,6 +29,8 @@ public:
 		// items = its;
 		it_idxs.clear();
 
+		if(indexes.size() == 0) return; // no item ?
+
 		// get global bounding box
 		BoundingBox b = (*its)[indexes[0]]->getBoundingBox();
 		for(const auto &ix: indexes)
