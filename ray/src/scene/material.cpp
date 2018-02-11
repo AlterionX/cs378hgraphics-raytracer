@@ -49,42 +49,35 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 
 	// intersection
 	const glm::dvec3 isect_p = r.at(i.getT());
-	const glm::dvec3 isect_n = i.getN();
-	const glm::dvec3 ray_d = r.getDirection();
+	const glm::dvec3 surf_n = i.getN();
+	const glm::dvec3 v = r.getDirection();
 
-	// material params
-	const glm::dvec3 ka_val = ka(i);
-	const glm::dvec3 kd_val = kd(i);
-	const glm::dvec3 ks_val = ks(i);
-	const double sh_val = shininess(i);
+	const auto sh = this->shininess(i);
+	const auto kd = this->kd(i);
+	const auto ks = this->ks(i);
+	const auto trans = this->Trans();
+
+	const auto& lights = scene->getAllLights();
 
 	// local illumination: ambient, diffuse, specular
 	glm::dvec3 i_out = ke(i) + ka(i) * scene->ambient();
-	for(const auto& pLight: scene->getAllLights()) {
-		const glm::dvec3 l_ld = pLight->getDirection(isect_p);
-		const glm::dvec3 l_color = pLight->getColor();
-		const double l_dattn_c = pLight->distanceAttenuation(isect_p);
-		const glm::dvec3 l_sattn_c = pLight->shadowAttenuation(r, isect_p);
+	for(auto l_idx = 0; l_idx < lights.size(); ++l_idx) {
+		const glm::dvec3 l_i = lights[l_idx]->getDirection(isect_p);
+		const glm::dvec3 l_r = (l_i - 2 * (glm::dot(l_i, surf_n)) * surf_n);
+		const glm::dvec3 l_color = lights[l_idx]->getColor();
 
-		// if(glm::dot(l_ld, isect_n) > 0) {
-			const glm::dvec3 l_rd = l_ld - 2*(glm::dot(l_ld, isect_n))*isect_n;
-			const auto leaving = (glm::dot(isect_n, ray_d) > 0) && (r.type() == ray::REFRACTION);
+		double dot = glm::dot(l_i, surf_n);
+		if (trans) dot = glm::abs(dot);
+		const glm::dvec3 d_comp = kd * glm::max(0.0, dot);
+		const glm::dvec3 s_comp = ks * glm::pow(
+			glm::dvec3(glm::max(0.0, glm::dot(l_r, v))),
+			glm::dvec3(sh)
+		);
 
-			const glm::dvec3 s_comp = /*leaving
-				? glm::dvec3(0.0)
-				:*/ (ks_val * glm::pow(
-					glm::dvec3(glm::max(0.0, glm::dot(l_rd, ray_d))),
-					glm::dvec3(sh_val)
-				)
-			);
-			const glm::dvec3 d_comp = kd_val * glm::max(0.0, glm::dot(l_ld, isect_n * (leaving ? -1.0 : 1.0)));
-
-			i_out += l_dattn_c * l_sattn_c * l_color * (d_comp + s_comp);
-		// }
+		const double dattn = lights[l_idx]->distanceAttenuation(isect_p);
+		const glm::dvec3 sattn = lights[l_idx]->shadowAttenuation(r, isect_p);
+		i_out += dattn * sattn * lights[l_idx]->getColor() * (d_comp + s_comp);
 	}
-
-	// for(int k=0; k<3; k++)
-	// 	i_out[k] = min(1.0, i_out[k]);
 
 	return i_out;
 }

@@ -103,9 +103,10 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			auto normal = (leaving ? -1.0 : 1.0) * i.getN();
 			auto c = -1 * glm::dot(normal, r.getDirection());
 			auto radicand = 1 - eta * eta * (1 - c * c);
+			auto tir = radicand < 0;
 
 			//reflection
- 			if (m.Refl() || radicand < 0) {
+ 			if (m.Refl() || (m.Trans() && tir)) {
 				double reflT;
  				ray reflRay(r.at(i.getT()),
 				 	r.getDirection() + 2 * c * normal,
@@ -116,8 +117,8 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				/*if (radicand < 0) {
 					colorC += reflCol;
 				}*/
-				if (leaving) {
-					 reflCol *= glm::max(glm::min(glm::pow(kt, glm::dvec3(reflT)), 1.0), 0.0);
+				if (m.Trans() && leaving && tir) {
+					reflCol *= glm::pow(kt, glm::dvec3(reflT));
 				}
 				colorC += reflCol;
  			}
@@ -128,14 +129,12 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				 	eta * r.getDirection() + (eta * c - glm::sqrt(radicand)) * normal,
 					glm::dvec3(1.0), ray::REFRACTION
 				);
-				// Order important underneath !!!!
-				colorC += traceRay(transRay, thresh, depth - 1, transT) * glm::max(glm::min(glm::pow(kt, glm::dvec3(transT)), 1.0), 0.0);
+				auto destCol = traceRay(transRay, thresh, depth - 1, transT); // TODO MAYBE distance attenuate?
+				if (!leaving) destCol *= glm::pow(kt, glm::dvec3(transT));
+				colorC += destCol;
 			}
 		}
-	} else {
-		// No intersection.  This ray travels to infinity, so we color
-		// it according to the background color.
-		// Check for the cube map, see if it is enabled.
+	} else { // No intersection
 		if (traceUI->cubeMap()) colorC = traceUI->getCubeMap()->getColor(r);
 	}
 #if VERBOSE
