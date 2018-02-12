@@ -76,6 +76,10 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 #if VERBOSE
 	std::cerr << "== current depth: " << depth << std::endl;
 #endif
+	/* if (thres[0] < r.atten()[0] || thres[1] < r.atten()[1] || thres[2] < r.atten()[2]) {
+		return colorC;
+	}*/
+
 	if(depth >= 0 && scene->intersect(r, i)) {
 		// YOUR CODE HERE
 
@@ -99,7 +103,6 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			//Assuming hitting a face from the back is leaving and from the front is entering
 			auto leaving = glm::dot(i.getN(), r.getDirection()) >= 0;
 			auto eta = leaving ? m.index(i)/1.0 : 1.0/m.index(i); //refractiveIndex
-			auto kt = leaving ? m.kt(i) : glm::dvec3(1);
 			auto normal = (leaving ? -1.0 : 1.0) * i.getN();
 			auto c = -1 * glm::dot(normal, r.getDirection());
 			auto radicand = 1 - eta * eta * (1 - c * c);
@@ -117,9 +120,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				/*if (radicand < 0) {
 					colorC += reflCol;
 				}*/
-				if (m.Trans() && leaving && tir) {
-					reflCol *= glm::pow(kt, glm::dvec3(reflT));
-				}
+				if (m.Trans() && leaving) reflCol *= glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(reflT)), 1.0), 0.0);
 				colorC += reflCol;
  			}
 			//refraction
@@ -129,9 +130,9 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				 	eta * r.getDirection() + (eta * c - glm::sqrt(radicand)) * normal,
 					glm::dvec3(1.0), ray::REFRACTION
 				);
-				auto destCol = traceRay(transRay, thresh, depth - 1, transT); // TODO MAYBE distance attenuate?
-				if (!leaving) destCol *= glm::pow(kt, glm::dvec3(transT));
-				colorC += destCol;
+				auto transCol = traceRay(transRay, thresh, depth - 1, transT); // TODO MAYBE distance attenuate?
+				if(!leaving) transCol *= glm::pow(m.kt(i), glm::dvec3(transT));
+				colorC += transCol;
 			}
 		}
 	} else { // No intersection
