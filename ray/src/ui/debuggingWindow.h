@@ -9,10 +9,11 @@
 
 class DebuggingWindow {
 public:
-  DebuggingWindow();
+  DebuggingWindow(Fl_Check_Button *cb);
   Fl_Window *m_debuggingWindow;
   Fl_Menu_Bar *m_debuggingMenuBar;
   static Fl_Menu_Item menu_m_debuggingMenuBar[];
+  Fl_Check_Button *m_starterButton;
 private:
   inline void cb_Normal_i(Fl_Menu_*, void*);
   static void cb_Normal(Fl_Menu_*, void*);
@@ -52,6 +53,8 @@ private:
   static void cb_Refraction(Fl_Menu_*, void*);
   inline void cb_Shadow_i(Fl_Menu_*, void*);
   static void cb_Shadow(Fl_Menu_*, void*);
+
+  static void close_cb(Fl_Widget* o, void*);
 public:
   DebuggingView *m_debuggingView;
   void show();

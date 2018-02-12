@@ -10,7 +10,6 @@
 #include "parser/Tokenizer.h"
 #include "parser/Parser.h"
 
-#include "ui/TraceUI.h"
 #include <cmath>
 #include <algorithm>
 #include <glm/glm.hpp>
@@ -42,7 +41,7 @@ glm::dvec3 RayTracer::trace(double x, double y)
 	ray r(glm::dvec3(0,0,0), glm::dvec3(0,0,0), glm::dvec3(1,1,1), ray::VISIBILITY);
 	scene->getCamera().rayThrough(x,y,r);
 	double dummy;
-	glm::dvec3 ret = traceRay(r, glm::dvec3(1.0,1.0,1.0), traceUI->getDepth(), dummy);
+	glm::dvec3 ret = traceRay(r, traceUI->getATermThresh(), traceUI->getDepth(), dummy);
 	ret = glm::clamp(ret, 0.0, 1.0);
 	return ret;
 }
@@ -67,71 +66,74 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 
 #define VERBOSE 0
 
+// Some normal air material
+static Material air = Material(
+	glm::dvec3(0.0), glm::dvec3(0.0), glm::dvec3(0.0),
+	glm::dvec3(0.0), glm::dvec3(0.0), glm::dvec3(1.0),
+	0.0, 1.0
+);
+
 // Do recursive ray tracing!  You'll want to insert a lot of code here
 // (or places called from here) to handle reflection, refraction, etc etc.
-glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, double& t )
+glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, std::vector<Material*>* matHist)
 {
-	isect i;
 	auto colorC = glm::dvec3(0.0, 0.0, 0.0);
 #if VERBOSE
 	std::cerr << "== current depth: " << depth << std::endl;
 #endif
-	/* if (thres[0] < r.atten()[0] || thres[1] < r.atten()[1] || thres[2] < r.atten()[2]) {
-		return colorC;
-	}*/
 
+	isect i;
 	if(depth >= 0 && scene->intersect(r, i)) {
-		// YOUR CODE HERE
+		depth -= 1;
 
-		// An intersection occurred!  We've got work to do. For now,
-		// this code gets the material for the surface that was intersected,
-		// and asks that material to provide a color for the ray.
-
-		// This is a great place to insert code for recursive ray tracing.
-		// Instead of just returning the result of shade(), add some
-		// more steps: add in the contributions from reflected and refracted
-		// rays.
-
-		// collision material
-		const Material& m = i.getMaterial();
+		// material in the collision surface negative n material
+		const Material& m_in = i.getMaterial();
+		// material in the collision surface n direction
 		t = i.getT();
 
-		colorC = m.shade(scene.get(), r, i);
-		// std::cout << depth << "shade :" << colorC << std::endl;
+		colorC = m_in.shade(scene.get(), r, i);
+		if (traceUI->aTermSwitch() && glm::dot(colorC, colorC) < thresh) return colorC;
 
-		if (m.Recur() && depth > 0) {
+		if (m_in.Recur() && depth > 0) {
 			//Assuming hitting a face from the back is leaving and from the front is entering
 			auto leaving = glm::dot(i.getN(), r.getDirection()) >= 0;
-			auto eta = leaving ? m.index(i)/1.0 : 1.0/m.index(i); //refractiveIndex
+
+			const Material& m_out = *((traceUI->overlappingObjects() && matHist && matHist->size() != 0) ? matHist->back() : &air);
+
+			auto curr_m = leaving ? m_in : m_out;
+			auto next_m = leaving ? m_out : m_in;
+
 			auto normal = (leaving ? -1.0 : 1.0) * i.getN();
 			auto c = -1 * glm::dot(normal, r.getDirection());
-			auto radicand = 1 - eta * eta * (1 - c * c);
-			auto tir = radicand < 0;
 
-			//reflection
- 			if (m.Refl() || (m.Trans() && tir)) {
+			auto eta = next_m.Trans() ? curr_m.index(i) / next_m.index(i) : 0; //refractiveIndex
+			auto radicand = 1 - eta * eta * (1 - c * c);
+			auto tir = next_m.Trans() && radicand < 0;
+
+			// reflection or total "internal" reflection
+ 			if (m_in.Refl() || tir) {
 				double reflT;
  				ray reflRay(r.at(i.getT()),
 				 	r.getDirection() + 2 * c * normal,
 					glm::dvec3(1.0), ray::REFLECTION
 				);
- 				auto reflCol = traceRay(reflRay, thresh, depth - 1, reflT) * m.kr(i);
-				//TODO figure out the proper way to use total internal reflection
-				/*if (radicand < 0) {
-					colorC += reflCol;
-				}*/
-				if (m.Trans() && leaving) reflCol *= glm::max(glm::min(glm::pow(m.kt(i), glm::dvec3(reflT)), 1.0), 0.0);
+				auto reflCol = traceRay(reflRay, thresh, depth, reflT, matHist) * m_in.kr(i);
+				reflCol *= glm::max(glm::min(glm::pow(curr_m.kt(i), glm::dvec3(reflT)), 1.0), 0.0);
 				colorC += reflCol;
  			}
-			//refraction
-			if (m.Trans() && radicand >= 0) {
+			//refraction and is not total "internal" reflection
+			if (next_m.Trans() && !tir) {
 				double transT;
 				ray transRay(r.at(i.getT() + RAY_EPSILON),
 				 	eta * r.getDirection() + (eta * c - glm::sqrt(radicand)) * normal,
 					glm::dvec3(1.0), ray::REFRACTION
 				);
-				auto transCol = traceRay(transRay, thresh, depth - 1, transT); // TODO MAYBE distance attenuate?
-				if(!leaving) transCol *= glm::pow(m.kt(i), glm::dvec3(transT));
+
+				if (matHist) matHist->push_back(&next_m);
+				auto transCol = traceRay(transRay, thresh, depth, transT, matHist);
+				if (matHist) matHist->pop_back();
+
+				transCol *= glm::pow(next_m.kt(i), glm::dvec3(transT));
 				colorC += transCol;
 			}
 		}
@@ -145,11 +147,8 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 }
 
 RayTracer::RayTracer()
-	: scene(nullptr), buffer(0), thresh(0), buffer_width(256), buffer_height(256), m_bBufferReady(false),
-	  aaMode(RayTracer::DEFAULT_AA)
-{
-	// std::cout << "RAYTRACER BORN" << std::endl;
-}
+	: scene(nullptr), buffer(0), thresh(0), buffer_width(256), buffer_height(256), m_bBufferReady(false)
+{}
 
 RayTracer::~RayTracer()
 {
@@ -229,9 +228,10 @@ void RayTracer::traceSetup(int w, int h)
 
 	threads = traceUI->getThreads();
 	block_size = traceUI->getBlockSize();
-	thresh = traceUI->getThreshold();
-	samples = traceUI->getSuperSamples();
-	aaThresh = traceUI->getAaThreshold();
+	thresh = traceUI->getATermThresh();
+    aaMode = traceUI->getAAMode();
+	samples = traceUI->getAASamples();
+	aaThresh = traceUI->getAAThresh();
 
 	// YOUR CODE HERE
 	// FIXME: Additional initializations
@@ -270,10 +270,6 @@ void RayTracer::traceImage(int w, int h)
 			// setPixel(i, j, tracePixel(i, j));
 		}
 	}
-}
-
-void RayTracer::setAAMode(RayTracer::AAMode m) {
-	this->aaMode = m;
 }
 
 glm::dvec2 hammersley(int n, int N) {
@@ -349,7 +345,7 @@ int RayTracer::aaImage()
 
 	int sampleCnt = 0;
 
-	if(this->aaMode == RayTracer::ADAPTIVE_AA) {
+	if(aaMode == TraceUI::AAMode::ADAPTIVE) {
 		// std::cout << "Adaptive Mode" << std::endl;
 		// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
 		#pragma omp parallel num_threads(this->threads)

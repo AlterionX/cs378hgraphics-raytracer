@@ -10,6 +10,8 @@
 #include <chrono>
 #include <algorithm>
 
+#include <iostream>
+
 #ifndef COMMAND_LINE_ONLY
 
 #include <FL/fl_ask.H>
@@ -38,7 +40,7 @@ GraphicalUI* GraphicalUI::whoami(Fl_Menu_* o)	// from menu item back to UI itsel
 }
 
 //--------------------------------- Callback Functions --------------------------------------------
-void GraphicalUI::cb_load_scene(Fl_Menu_* o, void* v) 
+void GraphicalUI::cb_load_scene(Fl_Menu_* o, void* v)
 {
 	pUI = whoami(o);
 
@@ -63,13 +65,13 @@ void GraphicalUI::cb_load_scene(Fl_Menu_* o, void* v)
 	}
 }
 
-void GraphicalUI::cb_load_cubemap(Fl_Menu_* o, void* v) 
+void GraphicalUI::cb_load_cubemap(Fl_Menu_* o, void* v)
 {
 	pUI = whoami(o);
 	pUI->m_cubeMapChooser->show();
 }
 
-void GraphicalUI::cb_save_image(Fl_Menu_* o, void* v) 
+void GraphicalUI::cb_save_image(Fl_Menu_* o, void* v)
 {
 	pUI = whoami(o);
 
@@ -92,7 +94,7 @@ void GraphicalUI::cb_exit(Fl_Menu_* o, void* v)
 	TraceUI::m_debug = false;
 }
 
-void GraphicalUI::cb_exit2(Fl_Widget* o, void* v) 
+void GraphicalUI::cb_exit2(Fl_Widget* o, void* v)
 {
 	pUI = (GraphicalUI *)(o->user_data());
 
@@ -105,7 +107,7 @@ void GraphicalUI::cb_exit2(Fl_Widget* o, void* v)
 	TraceUI::m_debug = false;
 }
 
-void GraphicalUI::cb_exit3(Fl_Widget* o, void* v) 
+void GraphicalUI::cb_exit3(Fl_Widget* o, void* v)
 {
 	pUI = (GraphicalUI *)(o->user_data());
 
@@ -115,7 +117,7 @@ void GraphicalUI::cb_exit3(Fl_Widget* o, void* v)
 	TraceUI::m_debug = false;
 }
 
-void GraphicalUI::cb_about(Fl_Menu_* o, void* v) 
+void GraphicalUI::cb_about(Fl_Menu_* o, void* v)
 {
 	fl_message("RayTracer Project for CS384g.");
 }
@@ -142,7 +144,7 @@ void GraphicalUI::cb_depthSlides(Fl_Widget* o, void* v)
 
 void GraphicalUI::cb_thresholdSlides(Fl_Widget* o, void* v)
 {
-	((GraphicalUI*)(o->user_data()))->m_nThreshold=int( ((Fl_Slider *)o)->value() ) ;
+	((GraphicalUI*)(o->user_data()))->m_aterm_thresh = double( ((Fl_Slider *)o)->value() ) / 1000.0;
 }
 
 void GraphicalUI::cb_blockSlides(Fl_Widget* o, void* v)
@@ -163,12 +165,12 @@ void GraphicalUI::cb_threadSlides(Fl_Widget* o, void* v)
 
 void GraphicalUI::cb_aaSamplesSlides(Fl_Widget* o, void* v)
 {
-	((GraphicalUI*)(o->user_data()))->m_nSuperSamples=int( ((Fl_Slider *)o)->value() ) ;
+	((GraphicalUI*)(o->user_data()))->m_aa_samples = int( ((Fl_Slider *)o)->value() ) ;
 }
 
 void GraphicalUI::cb_aaThresholdSlides(Fl_Widget* o, void* v)
 {
-	((GraphicalUI*)(o->user_data()))->m_nAaThreshold=int( ((Fl_Slider *)o)->value() ) ;
+	((GraphicalUI*)(o->user_data()))->m_aa_thresh = int( ((Fl_Slider *)o)->value() ) / 100.0 ;
 }
 
 void GraphicalUI::cb_kdTreeDepthSlides(Fl_Widget* o, void* v)
@@ -221,17 +223,35 @@ void GraphicalUI::cb_bfCheckButton(Fl_Widget* o, void* v)
 	pUI->m_backface = (((Fl_Check_Button*)o)->value() == 1);
 }
 
-void GraphicalUI::cb_aaCheckButton(Fl_Widget* o, void* v)
+void GraphicalUI::cb_ooCheckButton(Fl_Widget* o, void* v)
 {
+	pUI=(GraphicalUI*)(o->user_data());
+	pUI->m_overlappingObjects = (((Fl_Check_Button*)o)->value() == 1);
+}
+
+void GraphicalUI::cb_aaModeChoice(Fl_Widget* o, void* v) {
 	pUI = (GraphicalUI*)(o->user_data());
-	pUI->m_antiAlias = (((Fl_Check_Button*)o)->value() == 1);
-	if (pUI->m_antiAlias) 
-	{
+    auto aaModeChoice = (Fl_Input_Choice*) o;
+    if (aaModeChoice->changed()) {
+        switch (*aaModeChoice->value()) {
+        case 'N':
+            pUI->m_aa_mode = AAMode::NONE;
+            break;
+        case 'S':
+            pUI->m_aa_mode = AAMode::SUPERSAMPLE;
+            break;
+        case 'J':
+            pUI->m_aa_mode = AAMode::JITTERED;
+            break;
+        case 'A':
+            pUI->m_aa_mode = AAMode::ADAPTIVE;
+            break;
+        }
+    }
+    if (pUI->aaSwitch()) {
 		pUI->m_aaSamplesSlider->activate();
 		pUI->m_aaThreshSlider->activate();
-	}
-	else
-	{
+	} else {
 		pUI->m_aaSamplesSlider->deactivate();
 		pUI->m_aaThreshSlider->deactivate();
 	}
@@ -240,14 +260,11 @@ void GraphicalUI::cb_aaCheckButton(Fl_Widget* o, void* v)
 void GraphicalUI::cb_kdCheckButton(Fl_Widget* o, void* v)
 {
 	pUI = (GraphicalUI*)(o->user_data());
-	pUI->m_kdTree = (((Fl_Check_Button*)o)->value() == 1);
-	if (pUI->m_kdTree) 
-	{
+	pUI->m_accel_struct = (AccelStruct) (((Fl_Check_Button*)o)->value() == 1);
+	if (pUI->accelStructSwitch()) {
 		pUI->m_treeDepthSlider->activate();
 		pUI->m_leafSizeSlider->activate();
-	}
-	else
-	{
+	} else {
 		pUI->m_treeDepthSlider->deactivate();
 		pUI->m_leafSizeSlider->deactivate();
 	}
@@ -257,7 +274,7 @@ void GraphicalUI::cb_cubeMapCheckButton(Fl_Widget* o, void* v)
 {
 	pUI = (GraphicalUI*)(o->user_data());
 	pUI->m_usingCubeMap = (((Fl_Check_Button*)o)->value() == 1 && pUI->getCubeMap() != nullptr);
-	if (pUI->m_usingCubeMap) 
+	if (pUI->m_usingCubeMap)
 		pUI->m_filterSlider->activate();
 	else {
 		pUI->m_filterSlider->deactivate();
@@ -301,7 +318,7 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 				prev = now;
 			}
 			// look for input and refresh window
-			Fl::wait(0);			
+			Fl::wait(0);
 			if (Fl::damage()) { Fl::flush(); }
 		}
 		traceTime = clock() - startTime;
@@ -330,13 +347,13 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 				if ((now - prev)/CLOCKS_PER_SEC * 1000 >= intervalMS)
 				{
 					print(buffer, "Trace: %.2f, Aa: %.2f, Total: %.2f, aaRays: %d",
-					      t_trace, t_elapsed, t_total, TraceUI::getCount()); 
+					      t_trace, t_elapsed, t_total, TraceUI::getCount());
 					pUI->m_traceGlWindow->label(buffer);
 					pUI->m_traceGlWindow->refresh();
 					prev = now;
 				}
 				// look for input and refresh window
-				Fl::wait(0);			
+				Fl::wait(0);
 				if (Fl::damage()) { Fl::flush(); }
 			}
 			aaTime = clock() - aaStart;
@@ -350,7 +367,7 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 			pUI->m_traceGlWindow->refresh();
 		}
 /*
-		pUI->raytracer->setThreshold(pUI->getThreshold());
+		pUI->raytracer->setThreshold(pUI->getATermThresh());
 
 		bool zOrder = false;
 		if (zOrder) {
@@ -359,11 +376,11 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 			while (th != 0) {
 				bits++;
 				th = th >> 1;
-			}      
+			}
 			while (tw != 0) {
 				bits++;
 				tw = tw >> 1;
-			}      
+			}
 		}
 					int frac = min(100,(int)((double)(b_width*b_height*num_blocks)/(double)(width*height)*100.0));
 					// update the window label
@@ -452,24 +469,24 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	// init.
 	m_threads = std::max(std::thread::hardware_concurrency(), (unsigned) 1);
 
-	m_mainWindow = new Fl_Window(100, 40, 450, 459, "Ray <Not Loaded>");
+	m_mainWindow = new Fl_Window(100, 40, 500, 550, "Ray <Not Loaded>");
 	m_mainWindow->user_data((void*)(this));	// record self to be used by static callback functions
 	// install menu bar
-	m_menubar = new Fl_Menu_Bar(0, 0, 440, 25);
+	m_menubar = new Fl_Menu_Bar(0, 0, 500, 25);
 	m_menubar->menu(menuitems);
 
 	// set up "render" button
-	m_renderButton = new Fl_Button(360, 37, 70, 25, "&Render");
+	m_renderButton = new Fl_Button(420, 37, 70, 25, "&Render");
 	m_renderButton->user_data((void*)(this));
 	m_renderButton->callback(cb_render);
 
 	// set up "stop" button
-	m_stopButton = new Fl_Button(360, 65, 70, 25, "&Stop");
+	m_stopButton = new Fl_Button(420, 65, 70, 25, "&Stop");
 	m_stopButton->user_data((void*)(this));
 	m_stopButton->callback(cb_stop);
 
 	// install depth slider
-	m_depthSlider = new Fl_Value_Slider(10, 40, 180, 20, "Recursion Depth");
+	m_depthSlider = new Fl_Value_Slider(10, 40, 220, 20, "Recursion Depth");
 	m_depthSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_depthSlider->type(FL_HOR_NICE_SLIDER);
 	m_depthSlider->labelfont(FL_COURIER);
@@ -482,7 +499,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_depthSlider->callback(cb_depthSlides);
 
 	// install blocksize slider
-	m_blockSlider = new Fl_Value_Slider(10, 65, 180, 20, "Blocksize");
+	m_blockSlider = new Fl_Value_Slider(10, 65, 220, 20, "Blocksize");
 	m_blockSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_blockSlider->type(FL_HOR_NICE_SLIDER);
 	m_blockSlider->labelfont(FL_COURIER);
@@ -495,7 +512,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_blockSlider->callback(cb_blockSlides);
 
 	// install threshold slider
-	m_thresholdSlider = new Fl_Value_Slider(10, 90, 180, 20, "Threshold (x 0.001)");
+	m_thresholdSlider = new Fl_Value_Slider(10, 90, 220, 20, "Threshold (x 0.001)");
 	m_thresholdSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_thresholdSlider->type(FL_HOR_NICE_SLIDER);
 	m_thresholdSlider->labelfont(FL_COURIER);
@@ -503,12 +520,12 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_thresholdSlider->minimum(0);
 	m_thresholdSlider->maximum(1000);
 	m_thresholdSlider->step(1);
-	m_thresholdSlider->value(m_nThreshold);
+	m_thresholdSlider->value(m_aterm_thresh * 1000);
 	m_thresholdSlider->align(FL_ALIGN_RIGHT);
 	m_thresholdSlider->callback(cb_thresholdSlides);
 
 	// install size slider
-	m_sizeSlider = new Fl_Value_Slider(10, 115, 180, 20, "Screen Size");
+	m_sizeSlider = new Fl_Value_Slider(10, 115, 220, 20, "Screen Size");
 	m_sizeSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_sizeSlider->type(FL_HOR_NICE_SLIDER);
 	m_sizeSlider->labelfont(FL_COURIER);
@@ -521,7 +538,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_sizeSlider->callback(cb_sizeSlides);
 
 	// install refresh interval slider
-	m_refreshSlider = new Fl_Value_Slider(10, 140, 180, 20, "Screen Refresh Interval (0.1 sec)");
+	m_refreshSlider = new Fl_Value_Slider(10, 140, 220, 20, "Screen Refresh Interval (0.1 sec)");
 	m_refreshSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_refreshSlider->type(FL_HOR_NICE_SLIDER);
 	m_refreshSlider->labelfont(FL_COURIER);
@@ -534,7 +551,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_refreshSlider->callback(cb_refreshSlides);
 
 	// install threads slider
-	m_refreshSlider = new Fl_Value_Slider(10, 165, 180, 20, "Threads");
+	m_refreshSlider = new Fl_Value_Slider(10, 165, 220, 20, "Threads");
 	m_refreshSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_refreshSlider->type(FL_HOR_NICE_SLIDER);
 	m_refreshSlider->labelfont(FL_COURIER);
@@ -547,7 +564,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_refreshSlider->callback(cb_threadSlides);
 
 	// install aasamples slider
-	m_aaSamplesSlider = new Fl_Value_Slider(95, 205, 180, 20, "Pixel Samples");
+	m_aaSamplesSlider = new Fl_Value_Slider(150, 205, 200, 20, "Pixel Samples");
 	m_aaSamplesSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_aaSamplesSlider->type(FL_HOR_NICE_SLIDER);
 	m_aaSamplesSlider->labelfont(FL_COURIER);
@@ -555,13 +572,13 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_aaSamplesSlider->minimum(1);
 	m_aaSamplesSlider->maximum(8);
 	m_aaSamplesSlider->step(1);
-	m_aaSamplesSlider->value(m_nSuperSamples);
+	m_aaSamplesSlider->value(m_aa_samples);
 	m_aaSamplesSlider->align(FL_ALIGN_RIGHT);
 	m_aaSamplesSlider->callback(cb_aaSamplesSlides);
-	if (!m_antiAlias) m_aaSamplesSlider->deactivate();
+	if (!aaSwitch()) m_aaSamplesSlider->deactivate();
 
 	// install aathreshold slider
-	m_aaThreshSlider = new Fl_Value_Slider(95, 237, 180, 20, "Supersample\nThreshold (x 0.001)");
+	m_aaThreshSlider = new Fl_Value_Slider(150, 237, 200, 20, "Supersample\nThreshold (x 0.001)");
 	m_aaThreshSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_aaThreshSlider->type(FL_HOR_NICE_SLIDER);
 	m_aaThreshSlider->labelfont(FL_COURIER);
@@ -569,19 +586,26 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_aaThreshSlider->minimum(0);
 	m_aaThreshSlider->maximum(1000);
 	m_aaThreshSlider->step(1);
-	m_aaThreshSlider->value(m_nAaThreshold);
+	m_aaThreshSlider->value((int) (m_aa_thresh * 100));
 	m_aaThreshSlider->align(FL_ALIGN_RIGHT);
 	m_aaThreshSlider->callback(cb_aaThresholdSlides);
-	if (!m_antiAlias) m_aaThreshSlider->deactivate();
+	if (!aaSwitch()) m_aaThreshSlider->deactivate();
 
-	// set up antialias checkbox
-	m_aaCheckButton = new Fl_Check_Button(10, 221, 75, 20, "Antialias");
-	m_aaCheckButton->user_data((void*)(this));
-	m_aaCheckButton->callback(cb_aaCheckButton);
-	m_aaCheckButton->value(m_antiAlias);
+    // set up antialias selectbox
+    m_aaModeChoice = new Fl_Input_Choice(10, 221, 130, 20, "Antialias Mode");
+	m_aaModeChoice->user_data((void*)(this));
+	m_aaModeChoice->labelfont(FL_COURIER);
+	m_aaModeChoice->labelsize(12);
+	m_aaModeChoice->align(FL_ALIGN_TOP);
+    m_aaModeChoice->add("None");
+    m_aaModeChoice->add("Supersample");
+    m_aaModeChoice->add("Jitter");
+    m_aaModeChoice->add("Adaptive");
+    m_aaModeChoice->callback(cb_aaModeChoice);
+    m_aaModeChoice->value((int) m_aa_mode);
 
 	// install kdmaxdepth slider
-	m_treeDepthSlider = new Fl_Value_Slider(95, 277, 180, 20, "Max Depth");
+	m_treeDepthSlider = new Fl_Value_Slider(150, 277, 200, 20, "Max Depth");
 	m_treeDepthSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_treeDepthSlider->type(FL_HOR_NICE_SLIDER);
 	m_treeDepthSlider->labelfont(FL_COURIER);
@@ -592,10 +616,10 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_treeDepthSlider->value(m_nTreeDepth);
 	m_treeDepthSlider->align(FL_ALIGN_RIGHT);
 	m_treeDepthSlider->callback(cb_kdTreeDepthSlides);
-	if (!m_kdTree) m_treeDepthSlider->deactivate();
+	if (!accelStructSwitch()) m_treeDepthSlider->deactivate();
 
 	// install kdleafsize slider
-	m_leafSizeSlider = new Fl_Value_Slider(95, 309, 180, 20, "Target Leaf Size");
+	m_leafSizeSlider = new Fl_Value_Slider(150, 309, 200, 20, "Target Leaf Size");
 	m_leafSizeSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_leafSizeSlider->type(FL_HOR_NICE_SLIDER);
 	m_leafSizeSlider->labelfont(FL_COURIER);
@@ -606,10 +630,10 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_leafSizeSlider->value(m_nLeafSize);
 	m_leafSizeSlider->align(FL_ALIGN_RIGHT);
 	m_leafSizeSlider->callback(cb_kdLeafSizeSlides);
-	if (!m_kdTree) m_leafSizeSlider->deactivate();
+	if (!accelStructSwitch()) m_leafSizeSlider->deactivate();
 
 	// install cubemap filter width slider
-	m_filterSlider = new Fl_Value_Slider(95, 349, 180, 20, "Filter Width");
+	m_filterSlider = new Fl_Value_Slider(150, 349, 200, 20, "Filter Width");
 	m_filterSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_filterSlider->type(FL_HOR_NICE_SLIDER);
 	m_filterSlider->labelfont(FL_COURIER);
@@ -623,13 +647,13 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	if (!m_usingCubeMap) m_filterSlider->deactivate();
 
 	// set up kdTree checkbox
-	m_kdCheckButton = new Fl_Check_Button(10, 293, 80, 20, "K-d Tree");
+	m_kdCheckButton = new Fl_Check_Button(10, 293, 130, 20, "K-d Tree");
 	m_kdCheckButton->user_data((void*)(this));
 	m_kdCheckButton->callback(cb_kdCheckButton);
-	m_kdCheckButton->value(m_kdTree);
+	m_kdCheckButton->value(accelStructSwitch());
 
 	// set up cubeMap checkbox
-	m_cubeMapCheckButton = new Fl_Check_Button(10, 349, 80, 20, "CubeMap");
+	m_cubeMapCheckButton = new Fl_Check_Button(10, 349, 130, 20, "CubeMap");
 	m_cubeMapCheckButton->user_data((void*)(this));
 	m_cubeMapCheckButton->callback(cb_cubeMapCheckButton);
 	m_cubeMapCheckButton->value(m_usingCubeMap);
@@ -638,25 +662,31 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	else m_cubeMapCheckButton->deactivate();
 
 	// set up smoothshade checkbox
-	m_ssCheckButton = new Fl_Check_Button(10, 389, 110, 20, "Smoothshade");
+	m_ssCheckButton = new Fl_Check_Button(10, 389, 120, 20, "Smoothshade");
 	m_ssCheckButton->user_data((void*)(this));
 	m_ssCheckButton->callback(cb_ssCheckButton);
 	m_ssCheckButton->value(m_smoothshade);
 
 	// set up shadows checkbox
-	m_shCheckButton = new Fl_Check_Button(140, 389, 80, 20, "Shadows");
+	m_shCheckButton = new Fl_Check_Button(150, 389, 90, 20, "Shadows");
 	m_shCheckButton->user_data((void*)(this));
 	m_shCheckButton->callback(cb_shCheckButton);
 	m_shCheckButton->value(m_shadows);
 
 	// set up backfacing checkbox
-	m_bfCheckButton = new Fl_Check_Button(240, 389, 110, 20, "Backface Cull");
+	m_bfCheckButton = new Fl_Check_Button(260, 389, 120, 20, "Backface Cull");
 	m_bfCheckButton->user_data((void*)(this));
 	m_bfCheckButton->callback(cb_bfCheckButton);
 	m_bfCheckButton->value(m_backface);
 
+	// set up backfacing checkbox
+	m_ooCheckButton = new Fl_Check_Button(10, 424, 125, 20, "Object Overlap");
+	m_ooCheckButton->user_data((void*)(this));
+	m_ooCheckButton->callback(cb_ooCheckButton);
+	m_ooCheckButton->value(m_overlappingObjects);
+
 	// set up debugging display checkbox
-	m_debuggingDisplayCheckButton = new Fl_Check_Button(10, 419, 140, 20, "Debugging display");
+	m_debuggingDisplayCheckButton = new Fl_Check_Button(145, 424, 160, 20, "Debugging display");
 	m_debuggingDisplayCheckButton->user_data((void*)(this));
 	m_debuggingDisplayCheckButton->callback(cb_debuggingDisplayCheckButton);
 	m_debuggingDisplayCheckButton->value(m_displayDebuggingInfo);
@@ -675,7 +705,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_traceGlWindow->resizable(m_traceGlWindow);
 
 	// debugging view
-	m_debuggingWindow = new DebuggingWindow();
+	m_debuggingWindow = new DebuggingWindow(m_debuggingDisplayCheckButton);
 	//	Fl_Window::default_callback((Fl_Window*)m_debuggingWindow, cb_exit3);
 	//	((Fl_Window*)m_debuggingWindow)->callback(cb_exit3);
 }

@@ -13,3 +13,11 @@
 		- to activate run "./ray --adaptaa" (the flag needs to be right after "./ray")
 		- sampling by pseudorandom sampling (number at each level: samples^2)
 		- have a parameter (adaa_eps) needs to be tuned
+
+
+	Adaptive Termination
+        once the size of a ray's contributions dips below a certain limit (for refraction and reflection rays only), they halt and return black as their color.
+
+	Overlapping objects
+		Assumes that "first" material is air. "First" is in quotes because it's a weird first. If the first intersection is opposite the surface normal, air is assumed to be outside. If the first intersection is on the same side as the surface normal, air is deemed to be inside.
+        Assumptions are made about the nesting of objects.

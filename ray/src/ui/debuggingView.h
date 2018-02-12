@@ -1,8 +1,8 @@
 // DebuggingView.h
 
 // This is the base class for all your models.  It contains
-// a camera control for your use.  The draw() function will 
-// set up default lighting and apply the projection, so if you 
+// a camera control for your use.  The draw() function will
+// set up default lighting and apply the projection, so if you
 // inherit, you will probably want to call DebuggingView::draw()
 // to set up the camera.
 
@@ -10,6 +10,7 @@
 #define DebuggingView_H
 
 #include <FL/Fl_Gl_Window.H>
+#include <FL/Fl_Check_Button.H>
 
 class ModelerCamera;
 class RayTracer;
@@ -17,7 +18,7 @@ class RayTracer;
 class DebuggingView : public Fl_Gl_Window
 {
 public:
-	enum ShadingMode 
+	enum ShadingMode
 	{ NORMAL, WIREFRAME, FLAT_SHADING, };
 
 	enum Quality
@@ -26,7 +27,7 @@ public:
 	enum LightingMode
 	{ SCENE_LIGHTING, DEFAULT_LIGHTING, };
 
-    
+
 	DebuggingView(int x, int y, int w, int h, const char *label = nullptr);
 
 	virtual ~DebuggingView();

@@ -11,6 +11,7 @@
 #include <thread>
 #include "scene/cubeMap.h"
 #include "scene/ray.h"
+#include "ui/TraceUI.h"
 
 class Scene;
 class Pixel {
@@ -22,17 +23,14 @@ public:
 	unsigned char* value;
 };
 
-
 class RayTracer {
 public:
-	enum AAMode { DEFAULT_AA, ADAPTIVE_AA };
-
 	RayTracer();
 	~RayTracer();
 
 	glm::dvec3 tracePixel(int i, int j);
-	glm::dvec3 traceRay(ray& r, const glm::dvec3& thresh, int depth,
-	                    double& length);
+	glm::dvec3 traceRay(ray& r, double thresh, int depth,
+        double& length, std::vector<Material*>* matHist = nullptr);
 
 	glm::dvec3 getPixel(int i, int j);
 	void setPixel(int i, int j, glm::dvec3 color);
@@ -40,7 +38,6 @@ public:
 	double aspectRatio();
 
 	void traceImage(int w, int h);
-	void setAAMode(RayTracer::AAMode m);
 	int adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &val);
 	int aaImage();
 
@@ -68,9 +65,9 @@ private:
 	unsigned int threads;
 	int block_size;
 	double thresh;
-	double aaThresh;
-	AAMode aaMode;
+    TraceUI::AAMode aaMode;
 	int samples;
+	double aaThresh;
 	std::unique_ptr<Scene> scene;
 
 	bool m_bBufferReady;

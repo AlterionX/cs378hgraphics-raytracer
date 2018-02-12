@@ -14,6 +14,7 @@
 #include <FL/Fl_Check_Button.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_File_Chooser.H>
+#include <FL/Fl_Input_Choice.H>
 
 #include "TraceUI.h"
 #include "TraceGLWindow.h"
@@ -46,12 +47,14 @@ public:
 	Fl_Slider*			m_filterSlider;
 
 	Fl_Check_Button*	m_debuggingDisplayCheckButton;
-	Fl_Check_Button*	m_aaCheckButton;
 	Fl_Check_Button*	m_kdCheckButton;
 	Fl_Check_Button*	m_cubeMapCheckButton;
 	Fl_Check_Button*	m_ssCheckButton;
 	Fl_Check_Button*	m_shCheckButton;
 	Fl_Check_Button*	m_bfCheckButton;
+    Fl_Check_Button*	m_ooCheckButton;
+
+    Fl_Input_Choice*    m_aaModeChoice;
 
 	Fl_Button*			m_renderButton;
 	Fl_Button*			m_stopButton;
@@ -70,7 +73,7 @@ public:
 
 	// static vars
 	static const char *traceWindowLabel;
-	
+
 private:
 
 	clock_t refreshInterval;
@@ -104,12 +107,14 @@ private:
 	static void cb_render(Fl_Widget* o, void* v);
 	static void cb_stop(Fl_Widget* o, void* v);
 	static void cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v);
-	static void cb_aaCheckButton(Fl_Widget* o, void* v);
 	static void cb_kdCheckButton(Fl_Widget* o, void* v);
 	static void cb_cubeMapCheckButton(Fl_Widget* o, void* v);
 	static void cb_ssCheckButton(Fl_Widget* o, void* v);
 	static void cb_shCheckButton(Fl_Widget* o, void* v);
 	static void cb_bfCheckButton(Fl_Widget* o, void* v);
+    static void cb_ooCheckButton(Fl_Widget* o, void* v);
+
+    static void cb_aaModeChoice(Fl_Widget* o, void* v);
 
 	static bool stopTrace;
 	static GraphicalUI* pUI;

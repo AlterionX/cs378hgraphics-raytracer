@@ -208,7 +208,7 @@ Fl_Menu_Item DebuggingWindow::menu_m_debuggingMenuBar[] = {
  {0}
 };
 
-DebuggingWindow::DebuggingWindow() {
+DebuggingWindow::DebuggingWindow(Fl_Check_Button *cb) : m_starterButton(cb) {
   Fl_Window* w;
   { Fl_Window* o = m_debuggingWindow = new Fl_Window(386, 395, "Debugging View");
     w = o;
@@ -223,6 +223,12 @@ DebuggingWindow::DebuggingWindow() {
     }
 	o->end();
   }
+  w->callback(DebuggingWindow::close_cb);
+}
+
+void DebuggingWindow::close_cb(Fl_Widget* o, void*) {
+    DebuggingWindow* dw = (DebuggingWindow*) o->user_data();
+    dw->hide();
 }
 
 void DebuggingWindow::show() {
@@ -231,8 +237,9 @@ void DebuggingWindow::show() {
 }
 
 void DebuggingWindow::hide() {
-  m_debuggingView->hide();
-  m_debuggingWindow->hide();
+    m_starterButton->value(0);
+    m_debuggingView->hide();
+    m_debuggingWindow->hide();
 }
 
 void DebuggingWindow::redraw() {

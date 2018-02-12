@@ -48,18 +48,39 @@ void TraceUI::loadFromJson(const char* file)
 	load(json, "threads", m_threads);
 	load(json, "size", m_nSize);
 	load(json, "recursion_depth", m_nDepth);
-	load(json, "threshold", m_nThreshold);
+
+    int aterm_thresh = m_aterm_thresh * 1000;
+	load(json, "threshold", aterm_thresh);
+    m_aterm_thresh = aterm_thresh / 1000.0;
+
 	load(json, "blocksize", m_nBlockSize);
-	load(json, "supersamples", m_nSuperSamples);
-	load(json, "aa_threshold", m_nAaThreshold);
 	load(json, "tree_depth", m_nTreeDepth);
 	load(json, "leaf_size", m_nLeafSize);
 	load(json, "filter_width", m_nFilterWidth);
-	load(json, "anti_alias", m_antiAlias);
-	load(json, "kdtree", m_kdTree);
+
+    bool aa;
+    try {
+        aa = json.at("anti_alias");
+        m_aa_mode = (AAMode) aa;
+    } catch (Json::type_error& e) {
+    } catch (Json::out_of_range& e) {}
+	load(json, "supersamples", m_aa_thresh);
+    int aa_thresh = m_aa_thresh * 100;
+	load(json, "aa_threshold", aa_thresh);
+    m_aa_thresh = aa_thresh / 100.0;
+
+    try {
+        bool accel_struct = accelStructSwitch();
+        accel_struct = json.at("kdtree");
+        m_aa_mode = (AAMode) aa;
+    } catch (Json::type_error& e) {
+    } catch (Json::out_of_range& e) {}
+
 	load(json, "shadows", m_shadows);
 	load(json, "smoothshade", m_smoothshade);
 	load(json, "backface_culling", m_backface);
+
+	//TODO make settings json capable
 }
 
 namespace {

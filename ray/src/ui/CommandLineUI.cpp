@@ -26,7 +26,8 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 	progName = argv[0];
 	const char* jsonfile = nullptr;
 	string cubemap_file;
-	while ((i = getopt(argc, argv, "tr:w:hj:c:")) != EOF) {
+	char prev = 0;
+	while ((i = getopt(argc, argv, "tr:w:hj:c:O:A:")) != EOF) {
 		switch (i) {
 			case 'r':
 				m_nDepth = atoi(optarg);
@@ -40,13 +41,63 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 			case 'c':
 				cubemap_file = optarg;
 				break;
+			case 'O':
+				prev = *optarg;
+				switch(prev) {
+					case 'a':
+						m_aa_mode = AAMode::ADAPTIVE;
+						break;
+					case 'j':
+						m_aa_mode = AAMode::JITTERED;
+						break;
+					case 'r':
+						m_aa_mode = AAMode::SUPERSAMPLE;
+						break;
+					case 'o':
+						m_overlappingObjects = true;
+						break;
+					case 'c':
+						break;
+					default:
+						std::cerr << "Invalid argument for O: '" << i << "'."
+						          << std::endl;
+						usage();
+						exit(1);
+				}
+				break;
+			case 'A':
+				switch(prev) {
+					case 'a':
+					case 'j':
+					case 'r':
+						m_aa_thresh = atoi(optarg);
+						break;
+					case 'c':
+						m_aterm_thresh = atof(optarg);
+						break;
+					default:
+						std::cerr << "Invalid argument for A, with prequel " << prev << ": '" << i << "'." << std::endl;
+						usage();
+						exit(1);
+				}
+				break;
+			case 'B':
+				switch(prev) {
+					case 'a':
+						m_aa_thresh = atof(optarg);
+						break;
+					default:
+						std::cerr << "Invalid argument for B, with prequel " << ((unsigned int) prev) << ": '" << i << "'." << std::endl;
+						usage();
+						exit(1);
+				}
+				break;
 			case 'h':
 				usage();
 				exit(1);
 			default:
 				// Oops; unknown argument
-				std::cerr << "Invalid argument: '" << i << "'."
-				          << std::endl;
+				std::cerr << "Invalid argument: '" << i << "'." << std::endl;
 				usage();
 				exit(1);
 		}
@@ -99,8 +150,8 @@ int CommandLineUI::run()
 			writeImage(imgName, width, height, buf);
 
 		double t = (double)(end - start) / CLOCKS_PER_SEC;
-		//		int totalRays = TraceUI::resetCount();
-		//	// std::cout << "total time = " << t << " seconds,
+		// int totalRays = TraceUI::resetCount();
+		// std::cout << "total time = " << t << " seconds,
 		// rays traced = " << totalRays << std::endl;
 		return 0;
 	} else {
@@ -123,5 +174,16 @@ void CommandLineUI::usage()
 	     << "  -r <#>      set recursion level (default " << m_nDepth << ")" << endl
 	     << "  -w <#>      set output image width (default " << m_nSize << ")" << endl
 	     << "  -j <FILE>   set parameters from JSON file" << endl
-	     << "  -c <FILE>   one Cubemap file, the remainings will be detected automatically" << endl;
+	     << "  -c <FILE>   one Cubemap file, the remainings will be detected automatically" << endl
+		 << "  -O <char>   additional options as follows:" << endl
+		 << "                  a     turns on adaptive AA" << endl
+		 << "                  j     turns on jittered AA" << endl
+		 << "                  r     turns on regular AA" << endl
+		 << "                  o     turns on overlapping objects" << endl
+		 << "                  c     turns on adaptive termination, must pass -A for this to have meaning." << endl
+		 << "  -A <#>      extra information for the most recent option passed into -O, as listed:" << endl
+		 << "                  ajr   sets antialiasing limit (supersampling value for jittered and regular, max depth for adaptive)." << endl
+		 << "                  c     sets the threshold for adaptive termination." << endl
+		 << "  -B <?>      even more extra information for the most recent option passed into -O, as listed:" << endl
+		 << "                  a     sets the threshold value for adaptive anitaliazing (double)." << endl;
 }
