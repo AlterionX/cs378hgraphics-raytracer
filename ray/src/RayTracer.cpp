@@ -66,16 +66,9 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 
 #define VERBOSE 0
 
-// Some normal air material
-static Material air = Material(
-	glm::dvec3(0.0), glm::dvec3(0.0), glm::dvec3(0.0),
-	glm::dvec3(0.0), glm::dvec3(0.0), glm::dvec3(1.0),
-	0.0, 1.0
-);
-
 // Do recursive ray tracing!  You'll want to insert a lot of code here
 // (or places called from here) to handle reflection, refraction, etc etc.
-glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, std::vector<Material*>* matHist)
+glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, const Material& mat_hist)
 {
 	auto colorC = glm::dvec3(0.0, 0.0, 0.0);
 #if VERBOSE
@@ -98,7 +91,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, std:
 			//Assuming hitting a face from the back is leaving and from the front is entering
 			auto leaving = glm::dot(i.getN(), r.getDirection()) >= 0;
 
-			const Material& m_out = *((traceUI->overlappingObjects() && matHist && matHist->size() != 0) ? matHist->back() : &air);
+			const Material& m_out = traceUI->overlappingObjects() ? mat_hist : air;
 
 			auto curr_m = leaving ? m_in : m_out;
 			auto next_m = leaving ? m_out : m_in;
@@ -113,11 +106,10 @@ glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, std:
 			// reflection or total "internal" reflection
  			if (m_in.Refl() || tir) {
 				double reflT;
- 				ray reflRay(r.at(i.getT()),
-				 	r.getDirection() + 2 * c * normal,
-					glm::dvec3(1.0), ray::REFLECTION
-				);
-				auto reflCol = traceRay(reflRay, thresh, depth, reflT, matHist) * m_in.kr(i);
+                auto reflDir = r.getDirection() + 2 * c * normal;
+                auto reflStart = r.at(i.getT() - RAY_EPSILON);
+ 				ray reflRay(reflStart, reflDir, glm::dvec3(1.0), ray::REFLECTION);
+				auto reflCol = traceRay(reflRay, thresh, depth, reflT, mat_hist) * m_in.kr(i);
 				reflCol *= glm::max(glm::min(glm::pow(curr_m.kt(i), glm::dvec3(reflT)), 1.0), 0.0);
 				colorC += reflCol;
  			}
@@ -129,9 +121,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, std:
 					glm::dvec3(1.0), ray::REFRACTION
 				);
 
-				if (matHist) matHist->push_back(&next_m);
-				auto transCol = traceRay(transRay, thresh, depth, transT, matHist);
-				if (matHist) matHist->pop_back();
+				auto transCol = traceRay(transRay, thresh, depth, transT, next_m);
 
 				transCol *= glm::pow(next_m.kt(i), glm::dvec3(transT));
 				colorC += transCol;

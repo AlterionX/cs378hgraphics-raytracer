@@ -1,6 +1,9 @@
 #include <cmath>
 #include <iostream>
 
+#include "../ui/TraceUI.h"
+extern TraceUI* traceUI;
+
 #include "light.h"
 #include <glm/glm.hpp>
 #include <glm/gtx/io.hpp>
@@ -19,29 +22,30 @@ double DirectionalLight::distanceAttenuation(const glm::dvec3& P) const
 
 glm::dvec3 DirectionalLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 {
-	// YOUR CODE HERE:
-	// You should implement shadow-handling code here.
-	// std::cout << "DirLight Shadow" << std::endl;
-
-	// back-up by eps
-	glm::dvec3 pb = p - r.getDirection()*EPS_BACKUP;
+    // back-up by eps
+	glm::dvec3 pb = p - r.getDirection() * EPS_BACKUP;
 
 	// trace shadow
 	glm::dvec3 sattn(1.0, 1.0, 1.0);
 	isect cur;
+    const Material* mat_hist = &air;
+	// for this ray, do intersect and move forward until nothing happens
 	for (
 		ray r2l(pb, getDirection(pb), glm::dvec3(1.0, 1.0, 1.0), ray::SHADOW);
 		scene->intersect(r2l, cur);
 		r2l.setPosition(r2l.at(cur.getT() + EPS_BACKUP))
 	) {
-		const Material& m = cur.getMaterial();
-		const glm::dvec3 kt_val = m.kt(cur);
-		bool is_inside = glm::dot(cur.getN(), r2l.getDirection()) > 0;
+		const Material& m_in = cur.getMaterial();
+		const bool is_inside = glm::dot(cur.getN(), r2l.getDirection()) > 0;
 
-		// check material
-		if(!m.Trans()) return glm::dvec3(0.0, 0.0, 0.0);
-		// jump to next intersection
-		if(is_inside) sattn *= glm::pow(kt_val, glm::dvec3(cur.getT()));
+		const Material& m_out = traceUI->overlappingObjects() ? *mat_hist : air;
+
+		auto curr_m = is_inside ? m_in : m_out;
+		auto next_m = is_inside ? m_out : m_in;
+
+        if (traceUI->aTermSwitch() && glm::dot(sattn, sattn) < traceUI->getATermThresh()*traceUI->getATermThresh())  return glm::dvec3(0.0);
+		if(!next_m.Trans()) return glm::dvec3(0.0);
+		sattn *= glm::pow(curr_m.kt(cur), glm::dvec3(cur.getT()));
 	}
 
 	return sattn;
@@ -80,27 +84,27 @@ glm::dvec3 PointLight::getDirection(const glm::dvec3& P) const
 }
 
 // assumption: call from out of material
-glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
-{
-	// YOUR CODE HERE:
-	// You should implement shadow-handling code here.
-	// std::cout << "P'Light Shadow" << std::endl;
-
+glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const {
 	// back-up by eps
 	glm::dvec3 pb = p - r.getDirection() * EPS_BACKUP;
 
 	// trace shadow
 	glm::dvec3 sattn(1.0, 1.0, 1.0);
 	isect cur;
+    const Material* mat_hist = &air;
 	// for this ray, do intersect and move forward until nothing happens
 	for (
 		ray r2l(pb, getDirection(pb), glm::dvec3(1.0, 1.0, 1.0), ray::SHADOW);
 		scene->intersect(r2l, cur);
 		r2l.setPosition(r2l.at(cur.getT() + EPS_BACKUP))
 	) {
-		const Material& m = cur.getMaterial();
-		const glm::dvec3 kt_val = m.kt(cur);
+		const Material& m_in = cur.getMaterial();
 		const bool is_inside = glm::dot(cur.getN(), r2l.getDirection()) > 0;
+
+		const Material& m_out = traceUI->overlappingObjects() ? *mat_hist : air;
+
+		auto curr_m = is_inside ? m_in : m_out;
+		auto next_m = is_inside ? m_out : m_in;
 
 		// check point light
 		if(glm::dot(
@@ -108,16 +112,14 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 			r2l.getDirection()) <= 0
 		) {  // went beyond the point light
 			if(is_inside) {
-					sattn *= glm::pow(kt_val, glm::dvec3(glm::distance(position, r2l.getPosition())));
+					sattn *= glm::pow(curr_m.kt(cur), glm::dvec3(glm::distance(position, r2l.getPosition())));
 			}
 			break;
 		}
 
-		// check material
-		if(!m.Trans()) return glm::dvec3(0.0, 0.0, 0.0);
-
-		// jump to next intersection
-		if (is_inside) sattn *= glm::pow(kt_val, glm::dvec3(cur.getT()));
+        if (traceUI->aTermSwitch() && glm::dot(sattn, sattn) < traceUI->getATermThresh()*traceUI->getATermThresh())  return glm::dvec3(0.0);
+		if(!next_m.Trans()) return glm::dvec3(0.0);
+		sattn *= glm::pow(curr_m.kt(cur), glm::dvec3(cur.getT()));
 	}
 
 	return sattn;

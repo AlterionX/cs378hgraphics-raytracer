@@ -12,6 +12,13 @@ extern TraceUI* traceUI;
 using namespace std;
 extern bool debugMode;
 
+// Some normal air material
+const Material air = Material(
+	glm::dvec3(0.0), glm::dvec3(0.0), glm::dvec3(0.0),
+	glm::dvec3(0.0), glm::dvec3(0.0), glm::dvec3(1.0),
+	0.0, 1.0
+);
+
 Material::~Material()
 {
 }

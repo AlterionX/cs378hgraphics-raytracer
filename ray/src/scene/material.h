@@ -22,8 +22,8 @@ using std::string;
 
 /* The TextureMap class can be used to store a texture map,
    which consists of a bitmap and various accessors to
-   it.  To implement basic texture mapping, you'll want to 
-   fill in the getMappedValue function to implement basic 
+   it.  To implement basic texture mapping, you'll want to
+   fill in the getMappedValue function to implement basic
    texture mapping.
 */
 class TextureMap {
@@ -63,16 +63,16 @@ class TextureMapException {
 
 /*
 MaterialParameter is a helper class for a material;
-it stores either a constant value (in a 3-vector) 
+it stores either a constant value (in a 3-vector)
 or else a link to a map of some type.  If the pointer
 to the TextureMap is NULL, the class simply returns
 whatever is stored in the constant vector.
 
-This is unabashedly a speed hack; we are replacing a 
-potential use of polymorphism with an old-school "if" 
+This is unabashedly a speed hack; we are replacing a
+potential use of polymorphism with an old-school "if"
 statement.  But raytracers are slow enough, and the
 Material class is used often enough, that it is
-(somewhat) justifiable to do this.  
+(somewhat) justifiable to do this.
 */
 
 class MaterialParameter
@@ -169,20 +169,20 @@ public:
         , _kt( glm::dvec3( 0.0, 0.0, 0.0 ) )
 		, _refl(0)
 		, _trans(0)
-        , _shininess( 0.0 ) 
+        , _shininess( 0.0 )
 		, _index(1.0) {}
 
     virtual ~Material();
 
-    Material( const glm::dvec3& e, const glm::dvec3& a, const glm::dvec3& s, 
+    Material( const glm::dvec3& e, const glm::dvec3& a, const glm::dvec3& s,
               const glm::dvec3& d, const glm::dvec3& r, const glm::dvec3& t, double sh, double in )
-        : _ke( e ), _ka( a ), _ks( s ), _kd( d ), _kr( r ), _kt( t ), 
+        : _ke( e ), _ka( a ), _ks( s ), _kd( d ), _kr( r ), _kt( t ),
           _shininess( glm::dvec3(sh,sh,sh) ), _index( glm::dvec3(in,in,in) ) { setBools(); }
 
     virtual glm::dvec3 shade( Scene *scene, const ray& r, const isect& i ) const;
 
 
-    
+
     Material &
     operator+=( const Material &m )
     {
@@ -212,7 +212,7 @@ public:
     double shininess( const isect& i ) const
 	{
 		// Have to renormalize into the range 0-128 if it's texture mapped.
-		return _shininess.mapped() ? 
+		return _shininess.mapped() ?
 			128.0*_shininess.intensityValue(i) :
 			_shininess.intensityValue(i);
 	}
@@ -226,7 +226,7 @@ public:
     void setDiffuse( const glm::dvec3& kd )      { _kd.setValue( kd ); }
     void setReflective( const glm::dvec3& kr )   { _kr.setValue( kr ); setBools(); }
     void setTransmissive( const glm::dvec3& kt ) { _kt.setValue( kt ); setBools(); }
-    void setShininess( double shininess )   
+    void setShininess( double shininess )
                                             { _shininess.setValue( shininess ); }
     void setIndex( double index )           { _index.setValue( index ); }
 
@@ -238,7 +238,7 @@ public:
     void setDiffuse( const MaterialParameter& kd )             { _kd = kd; }
     void setReflective( const MaterialParameter& kr )          { _kr = kr; setBools(); }
     void setTransmissive( const MaterialParameter& kt )        { _kt = kt; setBools(); }
-    void setShininess( const MaterialParameter& shininess )    
+    void setShininess( const MaterialParameter& shininess )
                                                                { _shininess = shininess; }
     void setIndex( const MaterialParameter& index )            { _index = index; }
 
@@ -262,7 +262,7 @@ private:
 	bool _recur;							  // either one
 	bool _spec;								  // any kind of specular?
 	bool _both;								  // reflection and transmission
-    
+
     MaterialParameter _shininess;
     MaterialParameter _index;                 // index of refraction
 
@@ -288,5 +288,8 @@ operator*( double d, Material m )
     m._shininess *= d;
     return m;
 }
+
+// Some normal air material
+extern const Material air;
 
 #endif // __MATERIAL_H__

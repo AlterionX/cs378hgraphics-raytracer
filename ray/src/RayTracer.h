@@ -30,7 +30,7 @@ public:
 
 	glm::dvec3 tracePixel(int i, int j);
 	glm::dvec3 traceRay(ray& r, double thresh, int depth,
-        double& length, std::vector<Material*>* matHist = nullptr);
+        double& length, const Material& mat_hist = air);
 
 	glm::dvec3 getPixel(int i, int j);
 	void setPixel(int i, int j, glm::dvec3 color);
