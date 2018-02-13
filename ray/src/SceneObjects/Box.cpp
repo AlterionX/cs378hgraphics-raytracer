@@ -64,16 +64,28 @@ bool Box::intersectLocal(ray& r, isect& i) const
 
         if(bestIndex < 3)
 		{
-                i.setN(glm::dvec3(-double(bestIndex == 0), -double(bestIndex == 1), -double(bestIndex == 2)));
-				i.setUVCoordinates( glm::dvec2(	0.5 - intersect_point[ min(i1, i2) ], 
-											0.5 + intersect_point[ max(i1, i2) ] ) );
+                i.setUVCoordinates( glm::dvec2( 0.5 - intersect_point[ min(i1, i2) ], 
+                                                                        0.5 + intersect_point[ max(i1, i2) ] ) );
+                i.setN(computeNormal(bestIndex, i));
 		}
         else
 		{
-                i.setN(glm::dvec3(double(bestIndex==3), double(bestIndex == 4), double(bestIndex == 5)));
-				i.setUVCoordinates( glm::dvec2(	0.5 + intersect_point[ min(i1, i2) ],
-											0.5 + intersect_point[ max(i1, i2) ] ) );
+                i.setUVCoordinates( glm::dvec2( 0.5 + intersect_point[ min(i1, i2) ],
+                                                                        0.5 + intersect_point[ max(i1, i2) ] ) );
+                i.setN(computeNormal(bestIndex, i));
 
 		}
         return true;
 }
+
+glm::dvec3 Box::computeNormal(int bestIndex, isect& i) const {
+        glm::dvec3 b_norm = this->getMaterial().bump(i);
+        if(glm::length(b_norm) > 0.0001) { // use bump map
+                return glm::normalize(b_norm - glm::dvec3(0.5, 0.5, 0.5));
+        }
+        else if(bestIndex < 3)
+                return glm::dvec3(-double(bestIndex == 0), -double(bestIndex == 1), -double(bestIndex == 2));
+        return glm::dvec3(double(bestIndex==3), double(bestIndex == 4), double(bestIndex == 5));
+
+}
+

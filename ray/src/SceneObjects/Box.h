@@ -2,6 +2,8 @@
 #define __BOX_H__
 
 #include "../scene/scene.h"
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 
 class Box : public MaterialSceneObject {
 public:
@@ -12,6 +14,8 @@ public:
 
 	virtual bool intersectLocal(ray& r, isect& i ) const;
 	virtual bool hasBoundingBoxCapability() const { return true; }
+
+	virtual glm::dvec3 computeNormal(int bestIndex, isect& i) const;
 
   virtual BoundingBox ComputeLocalBoundingBox()
   {

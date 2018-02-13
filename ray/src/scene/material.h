@@ -167,6 +167,7 @@ public:
         , _kd( glm::dvec3( 0.0, 0.0, 0.0 ) )
         , _kr( glm::dvec3( 0.0, 0.0, 0.0 ) )
         , _kt( glm::dvec3( 0.0, 0.0, 0.0 ) )
+        , _bump( glm::dvec3( 0.0, 0.0, 0.0 ) )
 		, _refl(0)
 		, _trans(0)
         , _shininess( 0.0 )
@@ -176,7 +177,7 @@ public:
 
     Material( const glm::dvec3& e, const glm::dvec3& a, const glm::dvec3& s,
               const glm::dvec3& d, const glm::dvec3& r, const glm::dvec3& t, double sh, double in )
-        : _ke( e ), _ka( a ), _ks( s ), _kd( d ), _kr( r ), _kt( t ),
+        : _ke( e ), _ka( a ), _ks( s ), _kd( d ), _kr( r ), _kt( t ), _bump( glm::dvec3( 0.0, 0.0, 0.0 ) ),
           _shininess( glm::dvec3(sh,sh,sh) ), _index( glm::dvec3(in,in,in) ) { setBools(); }
 
     virtual glm::dvec3 shade( Scene *scene, const ray& r, const isect& i ) const;
@@ -209,6 +210,7 @@ public:
     glm::dvec3 kd( const isect& i ) const { return _kd.value(i); }
     glm::dvec3 kr( const isect& i ) const { return _kr.value(i); }
     glm::dvec3 kt( const isect& i ) const { return _kt.value(i); }
+    glm::dvec3 bump( const isect& i ) const { return _bump.value(i); }
     double shininess( const isect& i ) const
 	{
 		// Have to renormalize into the range 0-128 if it's texture mapped.
@@ -228,6 +230,7 @@ public:
     void setTransmissive( const glm::dvec3& kt ) { _kt.setValue( kt ); setBools(); }
     void setShininess( double shininess )
                                             { _shininess.setValue( shininess ); }
+
     void setIndex( double index )           { _index.setValue( index ); }
 
 
@@ -241,6 +244,8 @@ public:
     void setShininess( const MaterialParameter& shininess )
                                                                { _shininess = shininess; }
     void setIndex( const MaterialParameter& index )            { _index = index; }
+
+    void setBump( const MaterialParameter& b )            { _bump = b; }
 
 	// get booleans for reflection and refraction
 	bool Refl() const { return _refl; }
@@ -256,6 +261,8 @@ private:
     MaterialParameter _kd;                    // diffuse
     MaterialParameter _kr;                    // reflective
     MaterialParameter _kt;                    // transmissive
+
+    MaterialParameter _bump;                  // bump map
 
 	bool _refl;								  // specular reflector?
 	bool _trans;							  // specular transmitter?

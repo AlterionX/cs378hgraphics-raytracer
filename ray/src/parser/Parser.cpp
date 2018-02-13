@@ -1041,6 +1041,10 @@ Material* Parser::parseMaterial( Scene* scene, const Material& parent )
         mat->setShininess( parseScalarMaterialParameter(scene) );
         break;
 
+      case BUMP:
+        mat->setBump( parseVec3dMaterialParameter(scene) );
+        break;
+
       case NAME:
          _tokenizer.Read(NAME);
          name = (_tokenizer.Read(IDENT))->ident();

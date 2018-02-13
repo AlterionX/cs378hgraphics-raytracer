@@ -133,6 +133,7 @@ glm::dvec3 TextureMap::getMappedValue(const glm::dvec2& coord) const
 			prows[i] = y * (pr - pl) + pl;
 		}
 
+		// std::cout << x << " " << y << ": return " << ((x * (prows[1] - prows[0]) + prows[0]) / 255.0) << std::endl;
 		return (x * (prows[1] - prows[0]) + prows[0]) / 255.0;
 	}
 	return glm::dvec3(0.0, 1.0, 0.0);
