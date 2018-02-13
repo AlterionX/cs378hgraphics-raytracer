@@ -1,0 +1,5 @@
+==========================================
+=== reference ============================
+
+lava_bump: http://sharkswithjetpacks.blogspot.com/2012/01/review-crazy-bump.html
+lava_texture: http://sharkswithjetpacks.blogspot.com/2012/01/review-crazy-bump.html
