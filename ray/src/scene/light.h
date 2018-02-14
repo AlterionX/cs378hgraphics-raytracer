@@ -79,7 +79,7 @@ protected:
 	glm::dvec3 position;
 
 	// These three values are the a, b, and c in the distance
-	// attenuation function (from the slide labelled 
+	// attenuation function (from the slide labelled
 	// "Intensity drop-off with distance"):
 	//    f(d) = min( 1, 1/( a + b d + c d^2 ) )
 	float constantTerm;		// a
@@ -94,7 +94,7 @@ protected:
 
 };
 
-
+/*
 //TODO stochastic lighting
 class AreaLight
 	: public Light
@@ -133,5 +133,6 @@ public:
 	void glDraw(GLenum lightID) const;
 	void glDraw() const;
 };
+*/
 
 #endif // __LIGHT_H__

@@ -41,7 +41,7 @@ bool Sphere::intersectLocal(ray& r, isect& i) const {
 
 void Sphere::intersectLocalList(ray& r, std::vector<isect>& iv) const {
     r.setDirection(glm::normalize(r.getDirection()));
-    
+
 	glm::dvec3 v = -r.getPosition();
 	double b = glm::dot(v, r.getDirection());
 	double discriminant = b * b - glm::dot(v,v) + 1;
@@ -49,20 +49,20 @@ void Sphere::intersectLocalList(ray& r, std::vector<isect>& iv) const {
 	if( discriminant < 0.0 ) return;
 
 	discriminant = sqrt( discriminant );
-    
+
 	double t1 = b - discriminant;
 	double t2 = b + discriminant;
-    
-    if( t1 > RAY_EPSILON ) {
-        isect i();
+
+    if (t1 > RAY_EPSILON) {
+        isect i;
         i.setObject(this);
         i.setMaterial(this->getMaterial());
         i.setT(t1);
         i.setN(glm::normalize(r.at( t1 )));
         iv.push_back(i);
     }
-    if( t2 > RAY_EPSILON ) {
-        isect i();
+    if (t2 > RAY_EPSILON) {
+        isect i;
         i.setObject(this);
         i.setMaterial(this->getMaterial());
         i.setT(t2);
@@ -70,4 +70,3 @@ void Sphere::intersectLocalList(ray& r, std::vector<isect>& iv) const {
         iv.push_back(i);
     }
 }
-

@@ -107,6 +107,11 @@ void Trimesh::intersectLocalList(ray& r, std::vector<isect>& iv) const {
 bool TrimeshFace::intersect(ray& r, isect& i) const {
 	return intersectLocal(r, i);
 }
+void TrimeshFace::intersectLocalList(ray& r, std::vector<isect>& iv) const {
+    isect i;
+	intersectLocal(r, i);
+    iv.push_back(i);
+}
 
 // Intersect ray r with the triangle abc.  If it hits returns true,
 // and put the parameter in t and the barycentric coordinates of the

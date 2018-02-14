@@ -106,7 +106,10 @@ bool Cone::intersectLocal(ray& r, isect& i) const
 	return ret;
 }
 void Cone::intersectLocalList(ray& r, std::vector<isect>& iv) const {
-	bool ret = false;
+    isect i;
+	i.setObject(this);
+	i.setMaterial(this->getMaterial());
+
 	const int x = 0, y = 1, z = 2;	// For the dumb array indexes for the vectors
 
 	glm::dvec3 normal;
@@ -139,32 +142,27 @@ void Cone::intersectLocalList(ray& r, std::vector<isect>& iv) const {
 	// This is confusing, but it figures out which
 	// root is closer and puts into theRoot
 	nearGood = isGoodRoot(r.at(nearRoot));
-	if (nearGood && (nearRoot > theRoot)) {
+	if (nearGood && (nearRoot > theRoot))
+	{
 		theRoot = nearRoot;
 		normal = glm::dvec3((r.at(theRoot))[x], (r.at(theRoot))[y], -2.0 * beta_squared * (r.at(theRoot)[z] + gamma));
-
-		i.setT(theRoot);
-		if (!capped && glm::dot(normal, r.getDirection()) > 0) normal = -normal;
-		i.setN(glm::normalize(normal));
-		i.setObject(this);
-		i.setMaterial(this->getMaterial());
-
-		iv.push_back(i);
+        if (!capped && glm::dot(normal, r.getDirection()) > 0) normal = -normal;
+        i.setT(theRoot);
+    	i.setN(glm::normalize(normal));
+        iv.push_back(isect(i));
 	}
-	farGood = isGoodRoot(r.at(farRoot));
-	if (farGood && farRoot > RAY_EPSILON)
-	{
-		theRoot = farRoot;
-		normal = glm::dvec3((r.at(theRoot))[x], (r.at(theRoot))[y], -2.0 * beta_squared * (r.at(theRoot)[z] + gamma));
-
-		i.setT(theRoot);
-		if (!capped && glm::dot(normal, r.getDirection()) > 0) normal = -normal;
-		i.setN(glm::normalize(normal));
-		i.setObject(this);
-		i.setMaterial(this->getMaterial());
-
-		iv.push_back(i);
-	}
+    if (farRoot != nearRoot) {
+    	farGood = isGoodRoot(r.at(farRoot));
+    	if (farGood && farRoot > RAY_EPSILON)
+    	{
+    		theRoot = farRoot;
+    		normal = glm::dvec3((r.at(theRoot))[x], (r.at(theRoot))[y], -2.0 * beta_squared * (r.at(theRoot)[z] + gamma));
+            if (!capped && glm::dot(normal, r.getDirection()) > 0) normal = -normal;
+            i.setT(theRoot);
+        	i.setN(glm::normalize(normal));
+            iv.push_back(isect(i));
+    	}
+    }
 
 	// These are to help with finding caps
 	double t1 = (-pz) / dz;
@@ -185,10 +183,9 @@ void Cone::intersectLocalList(ray& r, std::vector<isect>& iv) const {
 				else {
 					normal = glm::dvec3(0.0, 0.0, 1.0);
 				}
-				i.setT(theRoot);
-				i.setN(glm::normalize(normal));
-				i.setObject(this);
-				i.setMaterial(this->getMaterial());
+                i.setT(theRoot);
+            	i.setN(glm::normalize(normal));
+                iv.push_back(isect(i));
 			}
 		}
 		glm::dvec3 q(r.at(t2));
@@ -204,10 +201,9 @@ void Cone::intersectLocalList(ray& r, std::vector<isect>& iv) const {
 				else {
 					normal = glm::dvec3(0.0, 0.0, -1.0);
 				}
-				i.setT(theRoot);
-				i.setN(glm::normalize(normal));
-				i.setObject(this);
-				i.setMaterial(this->getMaterial());
+                i.setT(theRoot);
+            	i.setN(glm::normalize(normal));
+                iv.push_back(isect(i));
 			}
 		}
 	}
@@ -220,4 +216,3 @@ bool Cone::isGoodRoot(glm::dvec3 root) const
 		return false;
 	return true;
 }
-

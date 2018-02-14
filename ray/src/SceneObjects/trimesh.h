@@ -142,6 +142,7 @@ public:
 
 	bool intersect(ray &r, isect &i) const;
 	bool intersectLocal(ray &r, isect &i) const;
+    virtual void intersectLocalList(ray& r, std::vector<isect>& iv) const;
 
 	bool hasBoundingBoxCapability() const { return true; }
 

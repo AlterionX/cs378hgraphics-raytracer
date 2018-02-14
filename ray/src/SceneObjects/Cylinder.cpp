@@ -153,20 +153,8 @@ bool Cylinder::intersectCaps(const ray& r, isect& i) const
 }
 
 void Cylinder::intersectLocalList(ray& r, std::vector<isect>& iv) const {
-	if (intersectCaps(r, i)) {
-		isect ii;
-		if (intersectBody(r, ii)) {
-			if (ii.getT() < i.getT()) {
-				i = ii;
-				i.setObject(this);
-				i.setMaterial(this->getMaterial());
-			}
-		}
-		return true;
-	}
-	else {
-		return intersectBody(r, i);
-	}
+    intersectCapsList(r, iv);
+    intersectBodyList(r, iv);
 }
 
 void Cylinder::intersectBodyList(const ray& r, std::vector<isect>& iv) const {
@@ -179,58 +167,51 @@ void Cylinder::intersectBodyList(const ray& r, std::vector<isect>& iv) const {
 	double b = 2.0*(x0*x1 + y0 * y1);
 	double c = x0 * x0 + y0 * y0 - 1.0;
 
-	if (0.0 == a) return false;
+	if (0.0 == a) return;
 
 	double discriminant = b * b - 4.0*a*c;
-	if (discriminant < 0.0) return false;
+	if (discriminant < 0.0) return;
 
 	discriminant = sqrt(discriminant);
 
 	double t1 = (-b - discriminant) / (2.0 * a);
 	double t2 = (-b + discriminant) / (2.0 * a);
 
-	isect i1();
-	isect i2();
-
-	i1.setObject(this);
-	i2.setObject(this);
-
-	i1.setMaterial(this->getMaterial());
-	i2.setMaterial(this->getMaterial());
-
 	if (t1 > RAY_EPSILON) {
 		glm::dvec3 P = r.at(t1);
 		double z = P[2];
 		if (z >= 0.0 && z <= 1.0) {
-			i1.setT(t1);
-			i1.setN(glm::normalize(glm::dvec3(P[0], P[1], 0.0)));
-			iv.push_back(i1);
+            isect i;
+        	i.setObject(this);
+        	i.setMaterial(this->getMaterial());
+			i.setT(t1);
+			i.setN(glm::normalize(glm::dvec3(P[0], P[1], 0.0)));
+			iv.push_back(i);
 		}
 	}
 
 	if (t2 > RAY_EPSILON) {
-		isect i();
-		i.setObject(this);
-		i.setMaterial(this->getMaterial());
-
 		glm::dvec3 P = r.at(t2);
 		double z = P[2];
 		if (z >= 0.0 && z <= 1.0) {
-			i2.setT(t2);
+            isect i;
+        	i.setObject(this);
+        	i.setMaterial(this->getMaterial());
+			i.setT(t2);
 			glm::dvec3 normal(P[0], P[1], 0.0);
 			if (!capped && glm::dot(normal, r.getDirection()) > 0) normal = -normal;
-			i2.setN(glm::normalize(normal));
-			iv.push_back(i2);
+			i.setN(glm::normalize(normal));
+			iv.push_back(i);
 		}
 	}
 }
 void Cylinder::intersectCapsList(const ray& r, std::vector<isect>& iv) const {
-	if (!capped) return false;
+	if (!capped) return;
 
 	double pz = r.getPosition()[2];
 	double dz = r.getDirection()[2];
 
-	if (0.0 == dz) return false;
+	if (0.0 == dz) return;
 
 	double t1;
 	double t2;
@@ -245,12 +226,11 @@ void Cylinder::intersectCapsList(const ray& r, std::vector<isect>& iv) const {
 	}
 
 	if (t1 >= RAY_EPSILON) {
-		isect i();
-		i.setObject(this);
-		i.setMaterial(this->getMaterial());
-
 		glm::dvec3 p(r.at(t1));
 		if ((p[0] * p[0] + p[1] * p[1]) <= 1.0) {
+    		isect i;
+    		i.setObject(this);
+    		i.setMaterial(this->getMaterial());
 			i.setT(t1);
 			if (dz > 0.0) {
 				// Intersection with cap at z = 0.
@@ -259,17 +239,16 @@ void Cylinder::intersectCapsList(const ray& r, std::vector<isect>& iv) const {
 			else {
 				i.setN(glm::dvec3(0.0, 0.0, 1.0));
 			}
-			return true;
+            iv.push_back(i);
 		}
 	}
 
 	if (t2 >= RAY_EPSILON) {
-		isect i();
-		i.setObject(this);
-		i.setMaterial(this->getMaterial());
-
 		glm::dvec3 p(r.at(t2));
 		if ((p[0] * p[0] + p[1] * p[1]) <= 1.0) {
+    		isect i;
+    		i.setObject(this);
+    		i.setMaterial(this->getMaterial());
 			i.setT(t2);
 			if (dz > 0.0) {
 				// Intersection with interior of cap at z = 1.
@@ -278,9 +257,7 @@ void Cylinder::intersectCapsList(const ray& r, std::vector<isect>& iv) const {
 			else {
 				i.setN(glm::dvec3(0.0, 0.0, -1.0));
 			}
-			return true;
+            iv.push_back(i);
 		}
 	}
-
-	return false;
 }

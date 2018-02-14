@@ -40,4 +40,8 @@ glm::dvec3 ray::at(const isect& i) const
 	return at(i.getT());
 }
 
+const bool isect::checkObj(const isect& a, const isect& b) {
+    a.obj->check(b.obj);
+}
+
 thread_local unsigned int ray_thread_id = 0;

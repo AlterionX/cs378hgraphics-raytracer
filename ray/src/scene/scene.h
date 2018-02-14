@@ -145,12 +145,8 @@ protected:
 	virtual void intersectLocalList(ray& r, std::vector<isect>& iv) const = 0;
 
 public:
-	virtual bool check(const Geometry *ptr) const {
-		return this->basisObj() == ptr->basisObj();
-	};
-	virtual Geometry* basisObj() const {
-		return this;
-	}
+	virtual bool check(const Geometry *ptr) const;
+	virtual const Geometry* basisObj() const;
 
 	// intersections performed in the global coordinate space.
 	bool intersect(ray& r, isect& i) const;

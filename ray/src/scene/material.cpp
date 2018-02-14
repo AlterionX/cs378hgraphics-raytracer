@@ -2,6 +2,7 @@
 #include "../ui/TraceUI.h"
 #include "light.h"
 #include "ray.h"
+#include "scene.h"
 extern TraceUI* traceUI;
 
 #include <glm/gtx/io.hpp>

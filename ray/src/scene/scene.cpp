@@ -38,7 +38,7 @@ bool Geometry::intersect(ray& r, isect& i) const {
 }
 
 std::vector<isect> Geometry::intersectList(ray& r) const {
-    std::vector<isect> buf();
+    std::vector<isect> buf;
 	double tmin, tmax;
 	if (hasBoundingBoxCapability() && !(bounds.intersect(r, tmin, tmax))) return buf;
 	// Transform the ray into the object's local coordinate space
@@ -115,6 +115,13 @@ void Geometry::ComputeBoundingBox() {
     bounds.setMin(glm::dvec3(newMin));
 }
 
+bool Geometry::check(const Geometry *ptr) const {
+    return this->basisObj() == ptr->basisObj();
+};
+const Geometry* Geometry::basisObj() const {
+    return this;
+}
+
 Scene::Scene(): kdtree(NULL), dirty(true)
 {
 }
@@ -172,14 +179,18 @@ bool Scene::intersect(ray& r, isect& i) const {
 	return have_one;
 }
 
-std::vector<isect> intersectList(ray& r) const {
-    std::vector<isec> iv;
-    
+std::vector<isect> Scene::intersectList(ray& r) const {
+    std::vector<isect> iv;
+
 	std::vector<int> potenlist;
 	kdtree->intersectList(r, potenlist);
-	for(const auto& obj_i : potenlist) {
+	for(const auto obj_i : potenlist) {
 		auto &obj = this->objects[obj_i];
         auto niv = obj->intersectList(r);
+    	// if debugging,
+    	if (TraceUI::m_debug) for (const auto i : niv) {
+        	intersectCache.push_back(std::make_pair(new ray(r), new isect(i)));
+        }
 		iv.insert(iv.end(), niv.begin(), niv.end());
 	}
 	return iv;
@@ -199,10 +210,10 @@ TextureMap* Scene::getTexture(string name) {
 //	All objects are homogenous in composition (possible to do a reverse trace and interpolate, but complicates logic)
 //	Material index of refraction and kt are a simple average
 Material Scene::discoverMat(ray&& r) {
-	auto iv = scene->intersectList(r);
+	auto iv = intersectList(r);
 	std::sort(iv.begin(), iv.end(), [](const isect& a, const isect& b) { return a.getT() > b.getT(); });
 	std::vector<isect> obj_stk = std::vector<isect>();
-	for (auto iv_it : iv) {
+	for (isect iv_it : iv) {
 		const bool leaving = glm::dot(iv_it.getN(), r.getDirection()) > 0;
 		if (leaving) {
 			obj_stk.push_back(iv_it);
@@ -211,15 +222,14 @@ Material Scene::discoverMat(ray&& r) {
 			for (auto it = obj_stk.begin(); it != obj_stk.end(); ++it) {
 				if (isect::checkObj(iv_it, obj_stk.back())) {
 					obj_stk.erase(it);
-					goto nit;
+                    break;
 				}
 			}
 		}
-	nit:
 	}
 	//TODO how does one combine all these materials?
 	auto blank = Material(air);
-	for (auto os_it : obj_stk) {
+	for (isect os_it : obj_stk) {
 		if (!os_it.getMaterial().Trans()) return vantablack_mat; // Not sure if this is even possible
 		blank += os_it.getMaterial();
 	}
