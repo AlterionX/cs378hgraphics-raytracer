@@ -239,8 +239,15 @@ void RayTracer::traceSetup(int w, int h)
  *		h:	height of the image buffer
  *
  */
-void RayTracer::traceImage(int w, int h)
-{
+void RayTracer::traceImage(int w, int h) {
+    //Scale up AA for easier aa post processing
+    if (traceUI->aaSwitch()) {
+        if (traceUI->getAAMode() == TraceUI::AAMode::SUPERSAMPLE) {
+            w *= traceUI->getAASamples();
+            h *= traceUI->getAASamples();
+        }
+    }
+
 	// Always call traceSetup before rendering anything.
 	traceSetup(w, h);
 
@@ -327,38 +334,44 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 	return sampleCnt;
 }
 
-int RayTracer::aaImage()
-{
-	// YOUR CODE HERE
-	// FIXME: Implement Anti-aliasing here
-	//
-	// TIP: samples and aaThresh have been synchronized with TraceUI by
-	//      RayTracer::traceSetup() function
-
+int RayTracer::aaImage() {
 	int sampleCnt = 0;
+	if (aaMode == TraceUI::AAMode::SUPERSAMPLE || aaMode == TraceUI::AAMode::JITTERED) {
+        sampleCnt = buffer_width * buffer_height;
 
-	if (aaMode == TraceUI::AAMode::ADAPTIVE) {
-		// std::cout << "Adaptive Mode" << std::endl;
-		// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
-#pragma omp parallel num_threads(this->threads)
-#pragma omp for collapse(2)
-		for (int i = 0; i < buffer_width; i++) {
-			for (int j = 0; j < buffer_height; j++) {
-				double x1 = double(i) / double(buffer_width);
-				double x2 = double(i + 1) / double(buffer_width);
-				double y1 = double(j) / double(buffer_height);
-				double y2 = double(j + 1) / double(buffer_height);
-
-				glm::dvec3 val;
-				sampleCnt += adaptaa(x1, x2, y1, y2, val);
-				setPixel(i, j, val);
+        #pragma omp parallel num_threads(this->threads)
+        #pragma omp for collapse(2)
+		for(int x = 0; x < buffer_width / samples; ++x) {
+			for(int y = 0; y < buffer_height / samples; ++y) {
+                glm::dvec3 d_pix(0.0);
+                for (int i = 0; i < samples; ++i) {
+                    for (int j = 0; j < samples; ++j) {
+                        d_pix += getPixel(x * samples + i, y * samples + j) / (double) (samples * samples);
+                    }
+                }
+                setPixel(x * samples, y * samples, d_pix);
 			}
 		}
-	}
-	else { // Raytracer::DEFAULT_AA
+
+		for(int x = 0; x < buffer_width / samples; ++x) {
+			for(int y = 0; y < buffer_height / samples; ++y) {
+                glm::dvec3 d_pix = getPixel(x * samples, y * samples);
+                unsigned char *pixel = buffer.data() + ( x + y * (buffer_width / samples) ) * 3;
+            	pixel[0] = (int)( 255.0 * d_pix[0]);
+            	pixel[1] = (int)( 255.0 * d_pix[1]);
+            	pixel[2] = (int)( 255.0 * d_pix[2]);
+            }
+        }
+        /*buffer_width /= samples;
+		buffer_height /= samples;
+        std::fill(buffer.begin() + ( buffer_width + (buffer_height - 1) * (buffer_width * samples) ) * 3, buffer.end(), 0);*/
+		/*bufferSize = buffer_width * buffer_height * 3;
+		buffer.resize(bufferSize);*/
+        traceSetup(buffer_width / samples, buffer_height / samples);
+    } else if (aaMode == TraceUI::AAMode::JITTERED) {
 		// std::cout << "Default Supersampling Mode" << std::endl;
-#pragma omp parallel num_threads(this->threads)
-#pragma omp for collapse(2)
+        #pragma omp parallel num_threads(this->threads)
+        #pragma omp for collapse(2)
 		for (int i = 0; i < buffer_width; i++) {
 			for (int j = 0; j < buffer_height; j++) {
 				double x1 = double(i) / double(buffer_width);
@@ -376,6 +389,23 @@ int RayTracer::aaImage()
 				mu *= (1.0 / (samples*samples));
 
 				setPixel(i, j, mu);
+			}
+		}
+    } else if(aaMode == TraceUI::AAMode::ADAPTIVE) {
+		// std::cout << "Adaptive Mode" << std::endl;
+		// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
+		#pragma omp parallel num_threads(this->threads)
+		#pragma omp for collapse(2)
+		for(int i=0; i<buffer_width; i++) {
+			for(int j=0; j<buffer_height; j++) {
+				double x1 = double(i)/double(buffer_width);
+				double x2 = double(i+1)/double(buffer_width);
+				double y1 = double(j)/double(buffer_height);
+				double y2 = double(j+1)/double(buffer_height);
+
+				glm::dvec3 val;
+				sampleCnt += adaptaa(x1, x2, y1, y2, val);
+				setPixel(i, j, val);
 			}
 		}
 	}

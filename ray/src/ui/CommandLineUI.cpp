@@ -70,7 +70,7 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 					case 'a':
 					case 'j':
 					case 'r':
-						m_aa_thresh = atoi(optarg);
+						m_aa_samples = atoi(optarg);
 						break;
 					case 'c':
 						m_aterm_thresh = atof(optarg);
@@ -135,6 +135,8 @@ int CommandLineUI::run()
 		raytracer->traceImage(width, height);
 		raytracer->waitRender();
 		if (aaSwitch()) {
+            std::cout << "antialiasing..." << std::endl;
+            std::cout << "antialiasing mode: " << (int) getAAMode() << std::endl;
 			raytracer->aaImage();
 			raytracer->waitRender();
 		}
