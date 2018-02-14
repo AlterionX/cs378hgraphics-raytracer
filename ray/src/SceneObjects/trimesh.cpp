@@ -14,8 +14,7 @@ extern TraceUI* traceUI;
 
 using namespace std;
 
-Trimesh::~Trimesh()
-{
+Trimesh::~Trimesh() {
 	for (auto m : materials)
 		delete m;
 	for (auto f : faces)
@@ -23,24 +22,20 @@ Trimesh::~Trimesh()
 }
 
 // must add vertices, normals, and materials IN ORDER
-void Trimesh::addVertex(const glm::dvec3& v)
-{
+void Trimesh::addVertex(const glm::dvec3& v) {
 	vertices.emplace_back(v);
 }
 
-void Trimesh::addMaterial(Material* m)
-{
+void Trimesh::addMaterial(Material* m) {
 	materials.emplace_back(m);
 }
 
-void Trimesh::addNormal(const glm::dvec3& n)
-{
+void Trimesh::addNormal(const glm::dvec3& n) {
 	normals.emplace_back(n);
 }
 
 // Returns false if the vertices a,b,c don't all exist
-bool Trimesh::addFace(int a, int b, int c)
-{
+bool Trimesh::addFace(int a, int b, int c) {
 	int vcnt = vertices.size();
 
 	if (a >= vcnt || b >= vcnt || c >= vcnt)
@@ -81,31 +76,35 @@ void Trimesh::conclude() {
 	}
 }
 
-bool Trimesh::intersectLocal(ray& r, isect& i) const
-{
+bool Trimesh::intersectLocal(ray& r, isect& i) const {
 	bool have_one = false;
 	std::vector<int> potenlist;
 	kdtree->intersectList(r, potenlist);
-	// std::cout << "trimesh: " << potenlist.size() << " to check" << std::endl;
 	for (auto face_i : potenlist) {
-		// std::cout << "trimesh check: " << face_i << std::endl;
 		auto &face = this->faces[face_i];
 		isect cur;
 		if (face->intersectLocal(r, cur)) {
-			// std::cout << "HIT FACE" << std::endl;
 			if (!have_one || (cur.getT() < i.getT())) {
 				i = cur;
 				have_one = true;
 			}
 		}
 	}
-	if (!have_one)
-		i.setT(1000.0);
+	if (!have_one) i.setT(1000.0);
 	return have_one;
 }
 
-bool TrimeshFace::intersect(ray& r, isect& i) const
-{
+void Trimesh::intersectLocalList(ray& r, std::vector<isect>& iv) const {
+	std::vector<int> potenlist;
+	kdtree->intersectList(r, potenlist);
+	for (auto face_i : potenlist) {
+		auto &face = this->faces[face_i];
+		isect cur;
+		if (face->intersectLocal(r, cur)) iv.push_back(cur);
+	}
+}
+
+bool TrimeshFace::intersect(ray& r, isect& i) const {
 	return intersectLocal(r, i);
 }
 

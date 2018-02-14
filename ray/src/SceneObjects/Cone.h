@@ -7,50 +7,51 @@ class Cone
 	: public MaterialSceneObject
 {
 public:
-	Cone( Scene *scene, Material *mat,
-			double h = 1.0, double br = 1.0, double tr = 0.0,
-			bool cap = false )
-		: MaterialSceneObject( scene, mat )
+	Cone(Scene *scene, Material *mat,
+		double h = 1.0, double br = 1.0, double tr = 0.0,
+		bool cap = false)
+		: MaterialSceneObject(scene, mat)
 	{
 		height = h;
-		b_radius = (br < 0.0f)?(-br):(br);
-		t_radius = (tr < 0.0f)?(-tr):(tr);
+		b_radius = (br < 0.0f) ? (-br) : (br);
+		t_radius = (tr < 0.0f) ? (-tr) : (tr);
 		capped = cap;
 
-		if(b_radius < 0.0001) b_radius = 0.0001;
-		if(t_radius < 0.0001) t_radius = 0.0001;
+		if (b_radius < 0.0001) b_radius = 0.0001;
+		if (t_radius < 0.0001) t_radius = 0.0001;
 
-		beta = (t_radius - b_radius)/height;
+		beta = (t_radius - b_radius) / height;
 
 		// Use the right radius
-		if(fabs(beta) < 0.001) beta = 0.001;
+		if (fabs(beta) < 0.001) beta = 0.001;
 
-		if(beta < 0.0) gamma = t_radius / beta;
+		if (beta < 0.0) gamma = t_radius / beta;
 		else gamma = b_radius / beta;
 
 		beta_squared = beta * beta;
 
 		// For the under the origin wierdness
-		if(gamma < 0.0) gamma = gamma - height;
+		if (gamma < 0.0) gamma = gamma - height;
 		gamma_squared = gamma * gamma;
 
 	}
 
-	virtual bool intersectLocal(ray& r, isect& i ) const;
+	virtual bool intersectLocal(ray& r, isect& i) const;
+	virtual void intersectLocalList(ray& r, std::vector<isect>& iv) const;
 	virtual bool hasBoundingBoxCapability() const { return true; }
 
-  virtual BoundingBox ComputeLocalBoundingBox()
-  {
-    BoundingBox localbounds;
-		double biggest_radius = (b_radius > t_radius)?(b_radius):(t_radius);
+	virtual BoundingBox ComputeLocalBoundingBox()
+	{
+		BoundingBox localbounds;
+		double biggest_radius = (b_radius > t_radius) ? (b_radius) : (t_radius);
 
-		localbounds.setMin(glm::dvec3(-biggest_radius, -biggest_radius, (height < 0.0f)?(height):(0.0f)));
-		localbounds.setMax(glm::dvec3(biggest_radius, biggest_radius, (height < 0.0f)?(0.0f):(height)));
-    return localbounds;
-  }
+		localbounds.setMin(glm::dvec3(-biggest_radius, -biggest_radius, (height < 0.0f) ? (height) : (0.0f)));
+		localbounds.setMax(glm::dvec3(biggest_radius, biggest_radius, (height < 0.0f) ? (0.0f) : (height)));
+		return localbounds;
+	}
 
-	bool intersectBody( const ray& r, isect& i ) const;
-	bool intersectCaps( const ray& r, isect& i ) const;
+	bool intersectBody(const ray& r, isect& i) const;
+	bool intersectCaps(const ray& r, isect& i) const;
 
 protected:
 	bool isGoodRoot(glm::dvec3 root) const;

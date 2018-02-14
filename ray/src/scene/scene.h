@@ -44,7 +44,7 @@ public:
 
 	// For debugging purposes, draws using OpenGL
 	virtual void glDraw(int quality, bool actualMaterials,
-	                    bool actualTextures) const
+		bool actualTextures) const
 	{
 	}
 
@@ -117,7 +117,7 @@ protected:
 	// force them to use the createChild() method.  Note that they CAN
 	// directly create a TransformRoot object.
 	TransformNode(TransformNode* parent, const glm::dmat4x4& xform)
-	        : children()
+		: children()
 	{
 		this->parent = parent;
 		if (parent == NULL)
@@ -142,10 +142,19 @@ protected:
 	// intersections performed in the object's local coordinate space
 	// do not call directly - this should only be called by intersect()
 	virtual bool intersectLocal(ray& r, isect& i) const = 0;
+	virtual void intersectLocalList(ray& r, std::vector<isect>& iv) const = 0;
 
 public:
+	virtual bool check(const Geometry *ptr) const {
+		return this->basisObj() == ptr->basisObj();
+	};
+	virtual Geometry* basisObj() const {
+		return this;
+	}
+
 	// intersections performed in the global coordinate space.
 	bool intersect(ray& r, isect& i) const;
+	std::vector<isect> intersectList(ray& r) const;
 
 	virtual bool hasBoundingBoxCapability() const;
 	const BoundingBox& getBoundingBox() const { return bounds; }
@@ -167,13 +176,13 @@ public:
 
 	// For debugging purposes, draws using OpenGL
 	void glDraw(int quality, bool actualMaterials,
-	            bool actualTextures) const;
+		bool actualTextures) const;
 
 	// The defult does nothing; this is here because it is not required
 	// that you implement this function if you create your own scene
 	// objects.
 	virtual void glDrawLocal(int quality, bool actualMaterials,
-	                         bool actualTextures) const
+		bool actualTextures) const
 	{
 	}
 
@@ -192,7 +201,7 @@ public:
 	virtual void setMaterial(Material* m) = 0;
 
 	void glDraw(int quality, bool actualMaterials,
-	            bool actualTextures) const;
+		bool actualTextures) const;
 
 protected:
 	SceneObject(Scene* scene) : Geometry(scene) {}
@@ -209,7 +218,7 @@ public:
 
 protected:
 	MaterialSceneObject(Scene* scene, Material* mat)
-	        : SceneObject(scene), material(mat)
+		: SceneObject(scene), material(mat)
 	{
 	}
 
@@ -234,6 +243,7 @@ public:
 	void conclude();
 
 	bool intersect(ray& r, isect& i) const;
+	std::vector<isect> intersectList(ray& r) const;
 
 	auto beginLights() const { return lights.begin(); }
 	auto endLights() const { return lights.end(); }
@@ -262,10 +272,11 @@ public:
 	}
 
 	void glDraw(int quality, bool actualMaterials,
-	            bool actualTextures) const;
+		bool actualTextures) const;
 
 	const BoundingBox& bounds() const { return sceneBounds; }
 
+	Material discoverMat(ray&& r);
 
 private:
 	std::vector<std::unique_ptr<Geometry>> objects;

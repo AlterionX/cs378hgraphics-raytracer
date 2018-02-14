@@ -30,7 +30,7 @@ public:
 	virtual void setRayTracer(RayTracer* r) { raytracer = r; }
 	void useCubeMap(bool b) { m_usingCubeMap = b; }
 
-		// accessors and their variables:
+	// accessors and their variables:
 public: // size
 	int getSize() const { return m_nSize; }
 protected:
@@ -45,14 +45,14 @@ protected:
 	int m_nBlockSize = 4;     // Blocksize (square, even, power of 2 preferred)
 
 public: // Adaptive termination (1 small bell)
-    bool aTermSwitch() const { return m_aterm_thresh > 0.0; }
+	bool aTermSwitch() const { return m_aterm_thresh > 0.0; }
 	double getATermThresh() const { return m_aterm_thresh; }
 protected:
 	double m_aterm_thresh = 0;
 
 public: // Antialiasing modes and info (adaptive = 1 bell, jittered = 1 small bell)
 	enum class AAMode { NONE = 0, SUPERSAMPLE = 1, ADAPTIVE = 2, JITTERED = 3 };
-    bool aaSwitch() const { return (bool) m_aa_mode; }
+	bool aaSwitch() const { return (bool)m_aa_mode; }
 	AAMode getAAMode() const { return m_aa_mode; }
 	int getAASamples() const { return m_aa_samples; }
 	double getAAThresh() const { return m_aa_thresh; }
@@ -63,7 +63,7 @@ protected:
 
 public: // Acceleration structure and info
 	enum class AccelStruct { NONE = 0, BVH = 1, KD_TREE = 2 };
-	bool accelStructSwitch() const { return (bool) m_accel_struct; }
+	bool accelStructSwitch() const { return (bool)m_accel_struct; }
 	int getMaxDepth() const { return m_nTreeDepth; }
 	int getLeafSize() const { return m_nLeafSize; }
 protected:
@@ -101,8 +101,22 @@ public: // overlapping objects (1 bell)
 protected:
 	bool m_overlappingObjects = false;
 
-public:
+public: // dof (2 bells)
+	bool dofSwitch() { return m_dof_apsz == 0; }
+	double getDofApSz() { return m_dof_apsz; }
+	double getDofFD() { return m_dof_fd; }
+	bool getDofJitter() { return m_dof_jitter; }
+protected:
+	double m_dof_apsz = 0;
+	double m_dof_fd = 0;
+	bool m_dof_jitter = false;
 
+public:
+	bool glossSwitch() { return m_gloss; }
+protected:
+	bool m_gloss = false;
+
+public:
 	// ray counter
 	static void addRays(int number, int ctr)
 	{
@@ -144,10 +158,10 @@ public:
 	static bool m_debug;
 
 	static bool matchCubemapFiles(const string& one_cubemap_file,
-	                              string matched_fn[6],
-	                              string& pdir);
+		string matched_fn[6],
+		string& pdir);
 protected:
-	RayTracer* raytracer = nullptr;
+	RayTracer * raytracer = nullptr;
 
 	static int rayCount[MAX_THREADS]; // Ray counter
 

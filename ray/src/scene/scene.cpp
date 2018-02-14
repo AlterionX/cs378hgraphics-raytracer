@@ -37,6 +37,32 @@ bool Geometry::intersect(ray& r, isect& i) const {
 	return rtrn;
 }
 
+std::vector<isect> Geometry::intersectList(ray& r) const {
+    std::vector<isect> buf();
+	double tmin, tmax;
+	if (hasBoundingBoxCapability() && !(bounds.intersect(r, tmin, tmax))) return buf;
+	// Transform the ray into the object's local coordinate space
+	glm::dvec3 pos = transform->globalToLocalCoords(r.getPosition());
+	glm::dvec3 dir = transform->globalToLocalCoords(r.getPosition() + r.getDirection()) - pos;
+	double length = glm::length(dir);
+	dir = glm::normalize(dir);
+	// Backup World pos/dir, and switch to local pos/dir
+	glm::dvec3 Wpos = r.getPosition();
+	glm::dvec3 Wdir = r.getDirection();
+	r.setPosition(pos);
+	r.setDirection(dir);
+	intersectLocalList(r, buf);
+    for (auto& i : buf) {
+        // Transform the intersection point & normal returned back into global space.
+        i.setN(transform->localToGlobalCoordsNormal(i.getN()));
+        i.setT(i.getT()/length);
+    }
+	// Restore World pos/dir
+	r.setPosition(Wpos);
+	r.setDirection(Wdir);
+	return buf;
+}
+
 bool Geometry::hasBoundingBoxCapability() const {
 	// by default, primitives do not have to specify a bounding box.
 	// If this method returns true for a primitive, then either the ComputeBoundingBox() or
@@ -119,7 +145,6 @@ void Scene::conclude() {
 	}
 }
 
-#define KDTREE_VISUAL 0
 // Get any intersection with an object.  Return information about the
 // intersection through the reference parameter.
 bool Scene::intersect(ray& r, isect& i) const {
@@ -129,35 +154,35 @@ bool Scene::intersect(ray& r, isect& i) const {
 
 	std::vector<int> potenlist;
 	kdtree->intersectList(r, potenlist);
-	// std::cout << "scene: " << potenlist.size() << " to check" << std::endl;
 	for(const auto& obj_i : potenlist) {
-		// std::cout << "scene check: " << obj_i << std::endl;
 		auto &obj = this->objects[obj_i];
 		isect cur;
 		if( obj->intersect(r, cur) ) {
-			// std::cout << "HIT" << std::endl;
 			if(!have_one || (cur.getT() < i.getT())) {
 				i = cur;
 				have_one = true;
 			}
 		}
 	}
-	// #if KDTREE_VISUAL
-	// {
-	// 	if( kdtree->intersect(r, cur) ) {
-	// 		if(!have_one || (cur.getT() < i.getT())) {
-	// 			i = cur;
-	// 			have_one = true;
-	// 		}
-	// 	}
-	// }
-	// #endif
 	if(!have_one)
 		i.setT(1000.0);
 	// if debugging,
 	if (TraceUI::m_debug)
 		intersectCache.push_back(std::make_pair(new ray(r), new isect(i)));
 	return have_one;
+}
+
+std::vector<isect> intersectList(ray& r) const {
+    std::vector<isec> iv;
+    
+	std::vector<int> potenlist;
+	kdtree->intersectList(r, potenlist);
+	for(const auto& obj_i : potenlist) {
+		auto &obj = this->objects[obj_i];
+        auto niv = obj->intersectList(r);
+		iv.insert(iv.end(), niv.begin(), niv.end());
+	}
+	return iv;
 }
 
 TextureMap* Scene::getTexture(string name) {
@@ -167,4 +192,37 @@ TextureMap* Scene::getTexture(string name) {
 		return textureCache[name].get();
 	}
 	return itr->second.get();
+}
+
+// Assumptions:
+//	All objects intersected are closed/manifold geom
+//	All objects are homogenous in composition (possible to do a reverse trace and interpolate, but complicates logic)
+//	Material index of refraction and kt are a simple average
+Material Scene::discoverMat(ray&& r) {
+	auto iv = scene->intersectList(r);
+	std::sort(iv.begin(), iv.end(), [](const isect& a, const isect& b) { return a.getT() > b.getT(); });
+	std::vector<isect> obj_stk = std::vector<isect>();
+	for (auto iv_it : iv) {
+		const bool leaving = glm::dot(iv_it.getN(), r.getDirection()) > 0;
+		if (leaving) {
+			obj_stk.push_back(iv_it);
+		}
+		else {
+			for (auto it = obj_stk.begin(); it != obj_stk.end(); ++it) {
+				if (isect::checkObj(iv_it, obj_stk.back())) {
+					obj_stk.erase(it);
+					goto nit;
+				}
+			}
+		}
+	nit:
+	}
+	//TODO how does one combine all these materials?
+	auto blank = Material(air);
+	for (auto os_it : obj_stk) {
+		if (!os_it.getMaterial().Trans()) return vantablack_mat; // Not sure if this is even possible
+		blank += os_it.getMaterial();
+	}
+	blank = (1.0 / (double)obj_stk.size()) * blank;
+	return blank;
 }

@@ -102,6 +102,10 @@ public:
 	}
 	const Material& getMaterial() const;
 
+	static const bool checkObj(const isect& a, const isect& b) {
+		a.obj->check(&b.obj);
+	}
+
 private:
 	void copyFromOther(const isect& other)
 	{

@@ -42,6 +42,7 @@ public:
 	bool vertNorms;
 
 	bool intersectLocal(ray &r, isect &i) const;
+	void intersectLocalList(ray& r, std::vector<isect>& iv) const;
 
 	~Trimesh();
 
@@ -135,13 +136,16 @@ public:
 
 	glm::dvec3 getNormal() { return normal; }
 
+	virtual Geometry* basisObj() const {
+		return this->parent;
+	}
+
 	bool intersect(ray &r, isect &i) const;
 	bool intersectLocal(ray &r, isect &i) const;
 
 	bool hasBoundingBoxCapability() const { return true; }
 
-	BoundingBox ComputeLocalBoundingBox()
-	{
+	BoundingBox ComputeLocalBoundingBox() {
 		BoundingBox localbounds;
 		localbounds.setMax(glm::max(parent->vertices[ids[0]],
 		                            parent->vertices[ids[1]]));

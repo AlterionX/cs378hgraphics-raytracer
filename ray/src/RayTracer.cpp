@@ -38,8 +38,8 @@ glm::dvec3 RayTracer::trace(double x, double y)
 	if (TraceUI::m_debug)
 		scene->intersectCache.clear();
 
-	ray r(glm::dvec3(0,0,0), glm::dvec3(0,0,0), glm::dvec3(1,1,1), ray::VISIBILITY);
-	scene->getCamera().rayThrough(x,y,r);
+	ray r(glm::dvec3(0, 0, 0), glm::dvec3(0, 0, 0), glm::dvec3(1, 1, 1), ray::VISIBILITY);
+	scene->getCamera().rayThrough(x, y, r);
 	double dummy;
 	glm::dvec3 ret = traceRay(r, traceUI->getATermThresh(), traceUI->getDepth(), dummy);
 	ret = glm::clamp(ret, 0.0, 1.0);
@@ -48,19 +48,19 @@ glm::dvec3 RayTracer::trace(double x, double y)
 
 glm::dvec3 RayTracer::tracePixel(int i, int j)
 {
-	glm::dvec3 col(0,0,0);
+	glm::dvec3 col(0, 0, 0);
 
-	if( ! sceneLoaded() ) return col;
+	if (!sceneLoaded()) return col;
 
-	double x = double(i)/double(buffer_width);
-	double y = double(j)/double(buffer_height);
+	double x = double(i) / double(buffer_width);
+	double y = double(j) / double(buffer_height);
 
-	unsigned char *pixel = buffer.data() + ( i + j * buffer_width ) * 3;
+	unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
 	col = trace(x, y);
 
-	pixel[0] = (int)( 255.0 * col[0]);
-	pixel[1] = (int)( 255.0 * col[1]);
-	pixel[2] = (int)( 255.0 * col[2]);
+	pixel[0] = (int)(255.0 * col[0]);
+	pixel[1] = (int)(255.0 * col[1]);
+	pixel[2] = (int)(255.0 * col[2]);
 	return col;
 }
 
@@ -68,7 +68,7 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 
 // Do recursive ray tracing!  You'll want to insert a lot of code here
 // (or places called from here) to handle reflection, refraction, etc etc.
-glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, const Material& mat_hist)
+glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, glm::dvec3* curr_m_kt)
 {
 	auto colorC = glm::dvec3(0.0, 0.0, 0.0);
 #if VERBOSE
@@ -76,7 +76,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, cons
 #endif
 
 	isect i;
-	if(depth >= 0 && scene->intersect(r, i)) {
+	if (depth >= 0 && scene->intersect(r, i)) {
 		depth -= 1;
 
 		// material in the collision surface negative n material
@@ -88,11 +88,10 @@ glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, cons
 		if (traceUI->aTermSwitch() && glm::dot(colorC, colorC) < thresh) return colorC;
 
 		if (m_in.Recur() && depth > 0) {
+			const Material& m_out = traceUI->overlappingObjects() ? scene->discoverMat(ray(r.at(i.getT() - RAY_EPSILON), r.getDirection(), glm::dvec3(1.0), ray::SHADOW)) : air;
+
 			//Assuming hitting a face from the back is leaving and from the front is entering
 			auto leaving = glm::dot(i.getN(), r.getDirection()) >= 0;
-
-			const Material& m_out = traceUI->overlappingObjects() ? mat_hist : air;
-
 			auto curr_m = leaving ? m_in : m_out;
 			auto next_m = leaving ? m_out : m_in;
 
@@ -104,34 +103,35 @@ glm::dvec3 RayTracer::traceRay(ray& r, double thresh, int depth, double& t, cons
 			auto tir = next_m.Trans() && radicand < 0;
 
 			// reflection or total "internal" reflection
- 			if (m_in.Refl() || tir) {
+			if (m_in.Refl() || tir) {
 				double reflT;
-                auto reflDir = r.getDirection() + 2 * c * normal;
-                auto reflStart = r.at(i.getT() - RAY_EPSILON);
- 				ray reflRay(reflStart, reflDir, glm::dvec3(1.0), ray::REFLECTION);
-				auto reflCol = traceRay(reflRay, thresh, depth, reflT, mat_hist) * m_in.kr(i);
+				auto reflDir = r.getDirection() + 2 * c * normal;
+				auto reflStart = r.at(i.getT() - RAY_EPSILON);
+				ray reflRay(reflStart, reflDir, glm::dvec3(1.0), ray::REFLECTION);
+				auto reflCol = traceRay(reflRay, thresh, depth, reflT) * m_in.kr(i);
 				reflCol *= glm::max(glm::min(glm::pow(curr_m.kt(i), glm::dvec3(reflT)), 1.0), 0.0);
 				colorC += reflCol;
- 			}
+			}
 			//refraction and is not total "internal" reflection
 			if (next_m.Trans() && !tir) {
 				double transT;
 				ray transRay(r.at(i.getT() + RAY_EPSILON),
-				 	eta * r.getDirection() + (eta * c - glm::sqrt(radicand)) * normal,
+					eta * r.getDirection() + (eta * c - glm::sqrt(radicand)) * normal,
 					glm::dvec3(1.0), ray::REFRACTION
 				);
 
-				auto transCol = traceRay(transRay, thresh, depth, transT, next_m);
+				auto transCol = traceRay(transRay, thresh, depth, transT);
 
 				transCol *= glm::pow(next_m.kt(i), glm::dvec3(transT));
 				colorC += transCol;
 			}
 		}
-	} else { // No intersection
+	}
+	else { // No intersection
 		if (traceUI->cubeMap()) colorC = traceUI->getCubeMap()->getColor(r);
 	}
 #if VERBOSE
-	std::cerr << "== depth: " << depth+1 << " done, returning: " << colorC << std::endl;
+	std::cerr << "== depth: " << depth + 1 << " done, returning: " << colorC << std::endl;
 #endif
 	return colorC;
 }
@@ -144,7 +144,7 @@ RayTracer::~RayTracer()
 {
 }
 
-void RayTracer::getBuffer( unsigned char *&buf, int &w, int &h )
+void RayTracer::getBuffer(unsigned char *&buf, int &w, int &h)
 {
 	buf = buffer.data();
 	w = buffer_width;
@@ -159,38 +159,40 @@ double RayTracer::aspectRatio()
 bool RayTracer::loadScene(const char* fn)
 {
 	ifstream ifs(fn);
-	if( !ifs ) {
-		string msg( "Error: couldn't read scene file " );
-		msg.append( fn );
-		traceUI->alert( msg );
+	if (!ifs) {
+		string msg("Error: couldn't read scene file ");
+		msg.append(fn);
+		traceUI->alert(msg);
 		return false;
 	}
 
 	// Strip off filename, leaving only the path:
-	string path( fn );
-	if (path.find_last_of( "\\/" ) == string::npos)
+	string path(fn);
+	if (path.find_last_of("\\/") == string::npos)
 		path = ".";
 	else
-		path = path.substr(0, path.find_last_of( "\\/" ));
+		path = path.substr(0, path.find_last_of("\\/"));
 
 	// Call this with 'true' for debug output from the tokenizer
-	Tokenizer tokenizer( ifs, false );
-	Parser parser( tokenizer, path );
+	Tokenizer tokenizer(ifs, false);
+	Parser parser(tokenizer, path);
 	try {
 		scene.reset(parser.parseScene());
 	}
-	catch( SyntaxErrorException& pe ) {
-		traceUI->alert( pe.formattedMessage() );
+	catch (SyntaxErrorException& pe) {
+		traceUI->alert(pe.formattedMessage());
 		return false;
-	} catch( ParserException& pe ) {
-		string msg( "Parser: fatal exception " );
-		msg.append( pe.message() );
-		traceUI->alert( msg );
+	}
+	catch (ParserException& pe) {
+		string msg("Parser: fatal exception ");
+		msg.append(pe.message());
+		traceUI->alert(msg);
 		return false;
-	} catch( TextureMapException e ) {
-		string msg( "Texture mapping exception: " );
-		msg.append( e.message() );
-		traceUI->alert( msg );
+	}
+	catch (TextureMapException e) {
+		string msg("Texture mapping exception: ");
+		msg.append(e.message());
+		traceUI->alert(msg);
 		return false;
 	}
 
@@ -219,7 +221,7 @@ void RayTracer::traceSetup(int w, int h)
 	threads = traceUI->getThreads();
 	block_size = traceUI->getBlockSize();
 	thresh = traceUI->getATermThresh();
-    aaMode = traceUI->getAAMode();
+	aaMode = traceUI->getAAMode();
 	samples = traceUI->getAASamples();
 	aaThresh = traceUI->getAAThresh();
 
@@ -240,7 +242,7 @@ void RayTracer::traceSetup(int w, int h)
 void RayTracer::traceImage(int w, int h)
 {
 	// Always call traceSetup before rendering anything.
-	traceSetup(w,h);
+	traceSetup(w, h);
 
 	// YOUR CODE HERE
 	// FIXME: Start one or more threads for ray tracing
@@ -251,10 +253,10 @@ void RayTracer::traceImage(int w, int h)
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
 
-	#pragma omp parallel num_threads(this->threads)
-	#pragma omp for collapse(2)
-	for(int i=0; i<w; i++) {
-		for(int j=0; j<h; j++) {
+#pragma omp parallel num_threads(this->threads)
+#pragma omp for collapse(2)
+	for (int i = 0; i < w; i++) {
+		for (int j = 0; j < h; j++) {
 			// std::cout << "done " << i << ", " << j << std::endl;
 			tracePixel(i, j);
 			// setPixel(i, j, tracePixel(i, j));
@@ -264,59 +266,59 @@ void RayTracer::traceImage(int w, int h)
 
 glm::dvec2 hammersley(int n, int N) {
 	double mul = 0.5, result = 0.0;
-	while(n > 0) {
-		result += (n%2) ? mul : 0;
+	while (n > 0) {
+		result += (n % 2) ? mul : 0;
 		n /= 2;
 		mul /= 2.0;
 	}
-	return glm::dvec2(result, ((double)n)/N);
+	return glm::dvec2(result, ((double)n) / N);
 }
 
 #define AA_DIV 8 // uncomment line 352 to use
 double adaa_eps = 0.0001;
 int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &val) {
-	if(x1 + adaa_eps >= x2 || y1 + adaa_eps >= y2) return 0;
+	if (x1 + adaa_eps >= x2 || y1 + adaa_eps >= y2) return 0;
 
 	// std::cout << "adaa: " << x1 << " " << x2 << " - " << y1 << " " << y2 << std::endl;
 
 	int sampleCnt = 0;
-	double xs[] = {x1, (x1+x2)/2.0, x2};
-	double ys[] = {y1, (y1+y2)/2.0, y2};
-	double w = x2-x1, h = y2-y1;
+	double xs[] = { x1, (x1 + x2) / 2.0, x2 };
+	double ys[] = { y1, (y1 + y2) / 2.0, y2 };
+	double w = x2 - x1, h = y2 - y1;
 	std::vector<glm::dvec3> s; // samples list
 	glm::dvec3 mu(0.0, 0.0, 0.0), sd(0.0, 0.0, 0.0);
 
 	// sample + calculate mean
-	#pragma omp parallel num_threads(this->threads)
-	#pragma omp for
-	for(int i=0; i<samples*samples; i++) {
+#pragma omp parallel num_threads(this->threads)
+#pragma omp for
+	for (int i = 0; i < samples*samples; i++) {
 		glm::dvec2 s_xy = hammersley(i, samples*samples);
-		glm::dvec3 s_c = trace(s_xy[0]*w + x1, s_xy[1]*h + y1);
+		glm::dvec3 s_c = trace(s_xy[0] * w + x1, s_xy[1] * h + y1);
 		s.push_back(s_c);
 		mu += s_c;
 		sampleCnt++;
 	}
-	mu *= (1.0/(samples*samples));
+	mu *= (1.0 / (samples*samples));
 
 	// calculate standard deviation
-	for(const auto& s_c: s) {
+	for (const auto& s_c : s) {
 		sd += glm::pow(glm::abs(s_c - mu), glm::dvec3(2.0));
 	}
-	sd *= (1.0/(samples*samples-1));
+	sd *= (1.0 / (samples*samples - 1));
 
 	// divide?
-	if(glm::length(sd) > aaThresh) {
+	if (glm::length(sd) > aaThresh) {
 		// std::cout << "divide!" << std::endl;
 		mu = glm::dvec3(0.0, 0.0, 0.0);
-		#pragma omp parallel num_threads(this->threads)
-		#pragma omp for collapse(2)
-		for(int i=0; i<2; i++)
-			for(int j=0; j<2; j++) {
+#pragma omp parallel num_threads(this->threads)
+#pragma omp for collapse(2)
+		for (int i = 0; i < 2; i++)
+			for (int j = 0; j < 2; j++) {
 				glm::dvec3 subval;
-				sampleCnt += adaptaa(xs[i], xs[i+1], ys[j], ys[j+1], subval);
+				sampleCnt += adaptaa(xs[i], xs[i + 1], ys[j], ys[j + 1], subval);
 				mu += subval;
 			}
-		mu *= (1.0/4.0);
+		mu *= (1.0 / 4.0);
 	}
 
 	// std::cout << "adaa: " << x1 << " " << x2 << " - " << y1 << " " << y2 << " " << val << std::endl;
@@ -335,17 +337,17 @@ int RayTracer::aaImage()
 
 	int sampleCnt = 0;
 
-	if(aaMode == TraceUI::AAMode::ADAPTIVE) {
+	if (aaMode == TraceUI::AAMode::ADAPTIVE) {
 		// std::cout << "Adaptive Mode" << std::endl;
 		// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
-		#pragma omp parallel num_threads(this->threads)
-		#pragma omp for collapse(2)
-		for(int i=0; i<buffer_width; i++) {
-			for(int j=0; j<buffer_height; j++) {
-				double x1 = double(i)/double(buffer_width);
-				double x2 = double(i+1)/double(buffer_width);
-				double y1 = double(j)/double(buffer_height);
-				double y2 = double(j+1)/double(buffer_height);
+#pragma omp parallel num_threads(this->threads)
+#pragma omp for collapse(2)
+		for (int i = 0; i < buffer_width; i++) {
+			for (int j = 0; j < buffer_height; j++) {
+				double x1 = double(i) / double(buffer_width);
+				double x2 = double(i + 1) / double(buffer_width);
+				double y1 = double(j) / double(buffer_height);
+				double y2 = double(j + 1) / double(buffer_height);
 
 				glm::dvec3 val;
 				sampleCnt += adaptaa(x1, x2, y1, y2, val);
@@ -355,23 +357,23 @@ int RayTracer::aaImage()
 	}
 	else { // Raytracer::DEFAULT_AA
 		// std::cout << "Default Supersampling Mode" << std::endl;
-		#pragma omp parallel num_threads(this->threads)
-		#pragma omp for collapse(2)
-		for(int i=0; i<buffer_width; i++) {
-			for(int j=0; j<buffer_height; j++) {
-				double x1 = double(i)/double(buffer_width);
-				double x2 = double(i+1)/double(buffer_width);
-				double y1 = double(j)/double(buffer_height);
-				double y2 = double(j+1)/double(buffer_height);
+#pragma omp parallel num_threads(this->threads)
+#pragma omp for collapse(2)
+		for (int i = 0; i < buffer_width; i++) {
+			for (int j = 0; j < buffer_height; j++) {
+				double x1 = double(i) / double(buffer_width);
+				double x2 = double(i + 1) / double(buffer_width);
+				double y1 = double(j) / double(buffer_height);
+				double y2 = double(j + 1) / double(buffer_height);
 
 				glm::dvec3 mu(0.0, 0.0, 0.0);
-				for(int k=0; k<samples*samples; k++) {
+				for (int k = 0; k < samples*samples; k++) {
 					glm::dvec2 s_xy = hammersley(k, samples*samples);
-					glm::dvec3 s_c = trace(s_xy[0]*(x2-x1) + x1, s_xy[1]*(y2-y1) + y1);
+					glm::dvec3 s_c = trace(s_xy[0] * (x2 - x1) + x1, s_xy[1] * (y2 - y1) + y1);
 					mu += s_c;
 					sampleCnt++;
 				}
-				mu *= (1.0/(samples*samples));
+				mu *= (1.0 / (samples*samples));
 
 				setPixel(i, j, mu);
 			}
@@ -405,15 +407,15 @@ void RayTracer::waitRender()
 
 glm::dvec3 RayTracer::getPixel(int i, int j)
 {
-	unsigned char *pixel = buffer.data() + ( i + j * buffer_width ) * 3;
-	return glm::dvec3((double)pixel[0]/255.0, (double)pixel[1]/255.0, (double)pixel[2]/255.0);
+	unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
+	return glm::dvec3((double)pixel[0] / 255.0, (double)pixel[1] / 255.0, (double)pixel[2] / 255.0);
 }
 
 void RayTracer::setPixel(int i, int j, glm::dvec3 color)
 {
-	unsigned char *pixel = buffer.data() + ( i + j * buffer_width ) * 3;
+	unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
 
-	pixel[0] = (int)( 255.0 * color[0]);
-	pixel[1] = (int)( 255.0 * color[1]);
-	pixel[2] = (int)( 255.0 * color[2]);
+	pixel[0] = (int)(255.0 * color[0]);
+	pixel[1] = (int)(255.0 * color[1]);
+	pixel[2] = (int)(255.0 * color[2]);
 }

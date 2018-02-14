@@ -298,5 +298,6 @@ operator*( double d, Material m )
 
 // Some normal air material
 extern const Material air;
+extern const Material vantablack_mat;
 
 #endif // __MATERIAL_H__

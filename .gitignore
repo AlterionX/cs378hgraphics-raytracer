@@ -3,3 +3,6 @@ ray/build
 ray/raycheck.out
 ray/raycheck2.out
 adapt_aa
+
+ray/.vs
+ray/CppProperties.json

@@ -18,7 +18,7 @@ public:
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const = 0;
 	virtual double distanceAttenuation(const glm::dvec3& P) const = 0;
 	virtual glm::dvec3 getColor() const = 0;
-	virtual glm::dvec3 getDirection (const glm::dvec3& P) const = 0;
+	virtual glm::dvec3 getDirection(const glm::dvec3& P) const = 0;
 
 
 protected:
@@ -54,14 +54,14 @@ class PointLight
 	: public Light
 {
 public:
-	PointLight( Scene *scene, const glm::dvec3& pos, const glm::dvec3& color,
+	PointLight(Scene *scene, const glm::dvec3& pos, const glm::dvec3& color,
 		float constantAttenuationTerm, float linearAttenuationTerm,
-		float quadraticAttenuationTerm )
-		: Light( scene, color ), position( pos ),
-		constantTerm(constantAttenuationTerm), 
+		float quadraticAttenuationTerm)
+		: Light(scene, color), position(pos),
+		constantTerm(constantAttenuationTerm),
 		linearTerm(linearAttenuationTerm),
-		quadraticTerm(quadraticAttenuationTerm) 
-		{}
+		quadraticTerm(quadraticAttenuationTerm)
+	{}
 
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
 	virtual double distanceAttenuation(const glm::dvec3& P) const;
@@ -92,6 +92,46 @@ public:
 
 protected:
 
+};
+
+
+//TODO stochastic lighting
+class AreaLight
+	: public Light
+{
+public:
+	AreaLight(Scene *scene, const glm::dvec3& orien, const glm::dvec3& color)
+		: Light(scene, color), orientation(glm::normalize(orien)) { }
+	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
+	virtual double distanceAttenuation(const glm::dvec3& P) const;
+	virtual glm::dvec3 getColor() const;
+	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
+
+protected:
+	glm::dvec3 		orientation;
+
+public:
+	void glDraw(GLenum lightID) const;
+	void glDraw() const;
+};
+
+class SpotLight
+	: public AreaLight
+{
+public:
+	SpotLight(Scene *scene, const glm::dvec3& orien, const glm::dvec3& color)
+		: AreaLight(scene, color), orientation(glm::normalize(orien)) { }
+	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
+	virtual double distanceAttenuation(const glm::dvec3& P) const;
+	virtual glm::dvec3 getColor() const;
+	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
+
+protected:
+	glm::dvec3 		orientation;
+
+public:
+	void glDraw(GLenum lightID) const;
+	void glDraw() const;
 };
 
 #endif // __LIGHT_H__
