@@ -1,0 +1,30 @@
+SBT-raytracer 1.0
+
+camera {
+	position = (0,0,-35);
+	viewdir = (0.0,0.0,1.0);
+	aspectratio = 1;
+	updir = (0,1,0);
+}
+
+point_light {
+	position = (0, 0, -20);
+	color = (1.0, 1.0, 1.0);
+	constant_attenuation_coeff= 0.05;
+	linear_attenuation_coeff = 0.01;
+	quadratic_attenuation_coeff = 0.007;	
+}
+
+translate( 0.0,0.0,0.0,
+	scale(20,
+		box { 
+			material = { 
+				bump = map("lava_bump.bmp");
+				ambient = (0.94, 0.18, 0.05);
+				transmissive = (0.7, 0.7, 0.7);
+				index = 1.5;
+				diffuse = (0.7, 0, 1.0);
+		//		specular = (0.9,0.4,0.0);
+		//		shininess = 76.8;
+			};
+		}))
