@@ -2,6 +2,7 @@
 
 #pragma warning (disable: 4786)
 
+#include "util.h"
 #include "RayTracer.h"
 #include "scene/light.h"
 #include "scene/material.h"
@@ -28,16 +29,6 @@ extern TraceUI* traceUI;
 // debugging messages.  Gets set in the "trace single ray" mode
 // in TraceGLWindow, for example.
 bool debugMode = false;
-
-glm::dvec2 hammersley(int n, int N) {
-	double mul = 0.5, result = 0.0;
-	while (n > 0) {
-		result += (n % 2) ? mul : 0;
-		n /= 2;
-		mul /= 2.0;
-	}
-	return glm::dvec2(result, ((double)n) / N);
-}
 
 // Trace a top-level ray through pixel(i,j), i.e. normalized window coordinates (x,y),
 // through the projection plane, and out into the scene.
@@ -68,7 +59,7 @@ glm::dvec3 RayTracer::trace(double x, double y) {
         double sz = traceUI->getDofApSz() / 2; // diam / 2 = radius
         int divs = traceUI->getDofSubDiv();
         // sample divs + 1 from before
-        double pi = 3.1415926535897932384626433832795028841971;
+        const double pi = 3.1415926535897932384626433832795028841971;
         double baseAngle = pi / divs;
         for (int i = 0; i < divs; i++) {
             glm::dvec2 jitter;

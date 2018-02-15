@@ -7,6 +7,8 @@ using std::min;
 using std::max;
 #endif
 
+#include "../util.h"
+
 #include "scene.h"
 #include "../ui/TraceUI.h"
 #include <FL/gl.h>
@@ -100,15 +102,14 @@ protected:
 class AreaLight : public PointLight {
 public:
 	AreaLight(Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
-		float cat, float lat, float qat, const glm::dvec3& ori) : PointLight(sc, p, col, cat, lat, qat), ori(ori) {}
-
-	virtual double distanceAttenuation(const glm::dvec3& P) const;
+		float cat, float lat, float qat, const glm::dvec3& ori) :
+		PointLight(sc, p, col, cat, lat, qat), ori(glm::normalize(ori)) {}
 
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
-	virtual glm::dvec3 srsAttenuation(const glm::dvec3& pos, const glm::dvec3& dir) const;
 	virtual bool sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const = 0;
 
-	virtual bool validImpact(const ray& r, const glm::dvec3& p) const = 0;
+	virtual bool validImpact(const ray& r, const glm::dvec3& p) const;
+	virtual bool validImpact(const ray& r, const glm::dvec3& p, glm::dvec3& lp) const;
 	virtual glm::dvec3 pick(const int i) const = 0;
 	virtual glm::dvec3 impact(const ray& r) const = 0;
 
@@ -118,16 +119,23 @@ protected:
 
 class AreaLightRect : public AreaLight {
 public:
-	AreaLightRect(Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
-		float cat, float lat, float qat, const glm::dvec3& ori, double w, double h) : AreaLight(sc, p, col, cat, lat, qat, ori), w(w), h(h) {}
+	AreaLightRect(
+		Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
+		float cat, float lat, float qat,
+		const glm::dvec3& ori,
+		double w, double h,
+		const glm::dvec3& u
+	) : AreaLight(sc, p, col, cat, lat, qat, ori),
+		w(w), h(h), u(glm::normalize(u)), v(glm::cross(u, ori)) {}
 
-	virtual bool validImpact(const ray& r, const glm::dvec3& p) const;
 	virtual glm::dvec3 pick(const int i) const;
 	virtual glm::dvec3 impact(const ray& r) const;
 
 protected:
 	double w;
 	double h;
+	glm::dvec3 u; // local x vec
+	glm::dvec3 v; // local y vec
 };
 
 class AreaLightCirc : public AreaLight {
@@ -135,9 +143,8 @@ public:
 	AreaLightCirc(Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
 		float cat, float lat, float qat, const glm::dvec3& ori, double r) : AreaLight(sc, p, col, cat, lat, qat, ori), r(r) {}
 
-	virtual bool validImpact(const ray& r, const glm::dvec3& p) const = 0;
-	virtual glm::dvec3 pick(const int i) const = 0;
-	virtual glm::dvec3 impact(const ray& r) const = 0;
+	virtual glm::dvec3 pick(const int i) const;
+	virtual glm::dvec3 impact(const ray& r) const;
 
 protected:
 	double r;
@@ -146,14 +153,16 @@ protected:
 class SpotLight : public AreaLightCirc {
 public:
 	SpotLight(Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
-		float cat, float lat, float qat, const glm::dvec3& ori, double r, double ang) : AreaLightCirc(sc, p, col, cat, lat, qat, ori, r), ang(ang) {}
+		float cat, float lat, float qat, const glm::dvec3& ori, double r, double ang) :
+		AreaLightCirc(sc, p, col, cat, lat, qat, ori, r), ang(ang), ang_tan(glm::tan(ang / 360 * PI)), offset(ang_tan * r) {}
 
-	virtual bool validImpact(const ray& r, const glm::dvec3& p) const = 0;
-	virtual glm::dvec3 pick(const int i) const = 0;
-	virtual glm::dvec3 impact(const ray& r) const = 0;
+	virtual bool validImpact(const ray& r, const glm::dvec3& p) const;
+	virtual bool validImpact(const ray& r, const glm::dvec3& p, glm::dvec3& lp) const;
 
 protected:
 	double ang;
+	double ang_tan;
+	double offset;
 };
 
 #endif // __LIGHT_H__
