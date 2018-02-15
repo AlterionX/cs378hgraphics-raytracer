@@ -82,7 +82,7 @@ glm::dvec3 AreaLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 		glm::dvec3 lpos = pick(i);
 		if (validImpact(r, pb, lpos)) sattn += srsAttenuation(pb, glm::normalize(lpos - pb));
 	}
-	sattn *= (1.0 / traceUI->softShadowRes());
+	sattn *= (1.0 / (traceUI->softShadowRes() - 1));
 	return sattn;
 }
 bool AreaLight::sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const {
@@ -99,10 +99,7 @@ bool AreaLight::validImpact(const ray& r, const glm::dvec3& p, glm::dvec3& lp) c
 
 glm::dvec3 AreaLightRect::pick(const int i) const {
 	auto point = hammersley(i, traceUI->softShadowRes());
-	return glm::dvec3(
-		(glm::dmat2(u, v) * (point * glm::dvec2(w, h))),
-		0.0
-	);
+	return glm::dmat2x3(u, v) * ((point - 0.5) * glm::dvec2(w, h));
 }
 glm::dvec3 AreaLightRect::impact(const ray& r) const {
 	double t = glm::dot(ori, r.getDirection());

@@ -13,15 +13,10 @@ area_light_rect {
 	constant_attenuation_coeff= 0.0;
 	linear_attenuation_coeff = 0.05;
 	quadratic_attenuation_coeff = 0.05;
-    direction = (0.0, -1, 0);
-    updir = (-1, 0, 0);
-    width = 500;
-    height = 500;
-}
-
-directional_light {
-	direction = (0, -1, 0);
-	colour = (1.0, 1.0, 1.0);
+    direction = (0.0, 1, 0);
+    updir = (0, 0, 1);
+    width = 50;
+    height = 50;
 }
 
 translate( 0,-8.45,2,
