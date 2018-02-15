@@ -113,7 +113,6 @@ glm::dvec3 AreaLightRect::impact(const ray& r) const {
 }
 
 glm::dvec3 AreaLightCirc::pick(const int i) const {
-	const auto point = hammersley(i, traceUI->softShadowRes());
 	double ang_rad = 2 * PI / traceUI->softShadowRes() * i;
 	double dist = 0.5 * r;
 	double x = glm::cos(ang_rad) * dist;
@@ -122,15 +121,15 @@ glm::dvec3 AreaLightCirc::pick(const int i) const {
 	// locate a point on the plane to use for u, then solve for v
     auto abs_ori = glm::abs(ori);
     glm::dvec3 u = glm::dvec3(0.0);
-    if (abs_ori[0] > abs_ori[1] && abs_ori[0] > abs_ori[2]) {
+    if (abs_ori[0] < abs_ori[1] && abs_ori[0] < abs_ori[2]) {
         u = glm::dvec3(0.0, -ori[2], ori[1]);
-    } else if (abs_ori[1] > abs_ori[2]) {
+    } else if (abs_ori[1] < abs_ori[2]) {
         u = glm::dvec3(-ori[2], 0.0, ori[0]);
     } else {
         u = glm::dvec3(-ori[1], ori[0], 0.0);
     }
     u = glm::normalize(u);
-	glm::dvec3 v = glm::cross(u, ori);
+	glm::dvec3 v = glm::cross(ori, u);
 
 	return x * u + y * v + position;
 }

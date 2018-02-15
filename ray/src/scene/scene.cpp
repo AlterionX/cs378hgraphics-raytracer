@@ -211,7 +211,7 @@ TextureMap* Scene::getTexture(string name) {
 //	Material index of refraction and kt are a simple average
 Material Scene::discoverMat(ray&& r) {
 	auto iv = intersectList(r);
-	std::sort(iv.begin(), iv.end(), [](const isect& a, const isect& b) { return a.getT() < b.getT(); });
+	std::sort(iv.begin(), iv.end(), [](const isect& a, const isect& b) { return a.getT() > b.getT(); });
 	std::vector<isect> obj_stk = std::vector<isect>();
 	for (isect iv_it : iv) {
 		const bool leaving = glm::dot(iv_it.getN(), r.getDirection()) > 0;

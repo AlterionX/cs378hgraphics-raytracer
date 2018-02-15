@@ -124,7 +124,7 @@ public:
 		double w, double h,
 		const glm::dvec3& u
 	) : AreaLight(sc, p, col, cat, lat, qat, ori),
-		w(w), h(h), u(glm::normalize(u)), v(glm::cross(u, ori)) {}
+		w(w), h(h), u(glm::normalize(u)), v(glm::cross(ori, u)) {}
 
 	virtual glm::dvec3 pick(const int i) const;
 	virtual glm::dvec3 impact(const ray& r) const;

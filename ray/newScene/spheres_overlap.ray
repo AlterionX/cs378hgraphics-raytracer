@@ -15,7 +15,7 @@ directional_light
 
 translate( 0, -1, 1,
 scale(2.5, 2.5, 2.5, sphere {
-	material = { 
+	material = {
 		diffuse = (0.4, 0.1, 0.1);
 		transmissive = (0.7, 0.7, 0.7);
 		reflective = (0.7, 0.7, 0.7);
@@ -27,7 +27,7 @@ scale(2.5, 2.5, 2.5, sphere {
 
 translate( 0, -1, -1,
 scale(2.5, 2.5, 2.5, sphere {
-	material = { 
+	material = {
 		diffuse = (0.1, 0.4, 0.1);
 		transmissive = (0.7, 0.7, 0.7);
 		reflective = (0.7, 0.7, 0.7);
@@ -39,9 +39,9 @@ scale(2.5, 2.5, 2.5, sphere {
 
 translate( 0, 1, 0,
 scale(2.5, 2.5, 2.5, sphere {
-	material = { 
+	material = {
 		diffuse = (0.1, 0.1, 0.4);
-		transmissive = (0.7, 0.7, 0.7);
+		transmissive = (1.0, 1.0, 1.0);
 		reflective = (0.7, 0.7, 0.7);
 		specular = (0.7, 0.7, 0.7);
 		shininess = 256;
@@ -51,8 +51,8 @@ scale(2.5, 2.5, 2.5, sphere {
 
 translate( -20.0,0.0,0.0,
 	scale(1.0, 40, 40,
-		box { 
-			material = { 
+		box {
+			material = {
 				diffuse = (1.0, 1.0, 1.0);
 			};
 		}))
