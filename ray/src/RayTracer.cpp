@@ -19,6 +19,8 @@
 #include <iostream>
 #include <fstream>
 
+#define ANAGLYPH_DELTA 0.25
+
 using namespace std;
 extern TraceUI* traceUI;
 
@@ -113,6 +115,15 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 
 	unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
 	col = trace(x, y);
+
+	if(traceUI->anaglyph()) {
+		glm::dvec3 cam_eye(scene->getCamera().getEye());
+		scene->getCamera().setEye(cam_eye + glm::dvec3(ANAGLYPH_DELTA, 0.0, 0.0));
+		glm::dvec3 col_red = trace(x, y);
+		scene->getCamera().setEye(cam_eye);
+
+		col[0] = col_red[0];
+	}
 
 	pixel[0] = (int)(255.0 * col[0]);
 	pixel[1] = (int)(255.0 * col[1]);
@@ -307,11 +318,11 @@ void RayTracer::traceImage(int w, int h) {
 	// Always call traceSetup before rendering anything.
 	traceSetup(w, h);
 
-    #pragma omp parallel num_threads(this->threads)
-    #pragma omp for collapse(2)
+    // #pragma omp parallel num_threads(this->threads)
+    // #pragma omp for collapse(2)
 	for (int i = 0; i < w; i++) {
 		for (int j = 0; j < h; j++) {
-			setPixel(i, j, tracePixel(i, j));
+			tracePixel(i, j);
 		}
 	}
 }

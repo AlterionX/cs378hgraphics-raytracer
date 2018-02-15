@@ -114,6 +114,12 @@ protected:
 	double m_dof_fd = 3;
 	bool m_dof_jitter = false;
 
+public: // overlapping objects (1 bell)
+	// enum class ANGLPHMode { NONE = 0, RED_CYAN = 1};
+	bool anaglyph() { return m_anaglyph; }
+protected:
+	bool m_anaglyph = false;
+
 public:
 	bool glossSwitch() { return m_gloss; }
 protected:

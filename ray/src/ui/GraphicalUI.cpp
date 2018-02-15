@@ -229,6 +229,12 @@ void GraphicalUI::cb_ooCheckButton(Fl_Widget* o, void* v)
 	pUI->m_overlappingObjects = (((Fl_Check_Button*)o)->value() == 1);
 }
 
+void GraphicalUI::cb_anCheckButton(Fl_Widget* o, void* v)
+{
+	pUI=(GraphicalUI*)(o->user_data());
+	pUI->m_anaglyph = (((Fl_Check_Button*)o)->value() == 1);
+}
+
 void GraphicalUI::cb_aaModeChoice(Fl_Widget* o, void* v) {
 	pUI = (GraphicalUI*)(o->user_data());
     auto aaModeChoice = (Fl_Input_Choice*) o;
@@ -690,6 +696,12 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_debuggingDisplayCheckButton->user_data((void*)(this));
 	m_debuggingDisplayCheckButton->callback(cb_debuggingDisplayCheckButton);
 	m_debuggingDisplayCheckButton->value(m_displayDebuggingInfo);
+
+	// set up backfacing checkbox
+	m_anCheckButton = new Fl_Check_Button(10, 459, 125, 20, "Anaglyph");
+	m_anCheckButton->user_data((void*)(this));
+	m_anCheckButton->callback(cb_anCheckButton);
+	m_anCheckButton->value(m_anaglyph);
 
 	m_mainWindow->callback(cb_exit2);
 	m_mainWindow->when(FL_HIDE);

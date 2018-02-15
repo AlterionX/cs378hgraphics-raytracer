@@ -59,6 +59,9 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
                     case 'd':
                         m_dof = true;
                         break;
+					case 'g':
+						m_anaglyph = true;
+						break;
 					case 'c':
 						break;
 					default:

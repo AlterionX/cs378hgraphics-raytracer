@@ -53,6 +53,7 @@ public:
 	Fl_Check_Button*	m_shCheckButton;
 	Fl_Check_Button*	m_bfCheckButton;
     Fl_Check_Button*	m_ooCheckButton;
+    Fl_Check_Button*	m_anCheckButton;
 
     Fl_Input_Choice*    m_aaModeChoice;
 
@@ -113,6 +114,7 @@ private:
 	static void cb_shCheckButton(Fl_Widget* o, void* v);
 	static void cb_bfCheckButton(Fl_Widget* o, void* v);
     static void cb_ooCheckButton(Fl_Widget* o, void* v);
+    static void cb_anCheckButton(Fl_Widget* o, void* v);
 
     static void cb_aaModeChoice(Fl_Widget* o, void* v);
 
