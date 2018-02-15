@@ -95,30 +95,20 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 
 	if (!sceneLoaded()) return col;
 
-	double x = double(i) / double(buffer_width);
-	double y = double(j) / double(buffer_height);
+	double x = double(i) / (double(buffer_width) * ((traceUI->aaSwitch() && traceUI->getAAMode() != TraceUI::AAMode::ADAPTIVE) ? samples : 1));
+	double y = double(j) / (double(buffer_height) * ((traceUI->aaSwitch() && traceUI->getAAMode() != TraceUI::AAMode::ADAPTIVE) ? samples : 1));
 
-    if (traceUI->getAAMode() == TraceUI::AAMode::JITTERED) {
-        auto jitter = hammersley(x*buffer_width+y, buffer_width*buffer_height) * (1.0/double(buffer_width));
-        x += jitter[0];
-        y += jitter[1];
+    col = trace(x, y);
+
+    if(traceUI->anaglyph()) {
+        glm::dvec3 cam_eye(scene->getCamera().getEye());
+        scene->getCamera().setEye(cam_eye + glm::dvec3(ANAGLYPH_DELTA, 0.0, 0.0));
+        glm::dvec3 col_red = trace(x, y);
+        scene->getCamera().setEye(cam_eye);
+
+        col[0] = col_red[0];
     }
 
-	unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
-	col = trace(x, y);
-
-	if(traceUI->anaglyph()) {
-		glm::dvec3 cam_eye(scene->getCamera().getEye());
-		scene->getCamera().setEye(cam_eye + glm::dvec3(ANAGLYPH_DELTA, 0.0, 0.0));
-		glm::dvec3 col_red = trace(x, y);
-		scene->getCamera().setEye(cam_eye);
-
-		col[0] = col_red[0];
-	}
-
-	pixel[0] = (int)(255.0 * col[0]);
-	pixel[1] = (int)(255.0 * col[1]);
-	pixel[2] = (int)(255.0 * col[2]);
 	return col;
 }
 
@@ -205,8 +195,8 @@ RayTracer::~RayTracer()
 void RayTracer::getBuffer(unsigned char *&buf, int &w, int &h)
 {
 	buf = buffer.data();
-	h = (traceUI->aaSwitch()) ? buffer_height / traceUI->getAASamples() : buffer_height;
-    w = (traceUI->aaSwitch()) ? buffer_width / traceUI->getAASamples() : buffer_width;
+	h = buffer_height;
+    w = buffer_width;
 }
 
 double RayTracer::aspectRatio()
@@ -298,22 +288,38 @@ void RayTracer::traceSetup(int w, int h)
  *
  */
 void RayTracer::traceImage(int w, int h) {
-    //Scale up AA for easier aa post processing
-    if (traceUI->aaSwitch()) {
-        if (traceUI->getAAMode() == TraceUI::AAMode::SUPERSAMPLE) {
-            w *= traceUI->getAASamples();
-            h *= traceUI->getAASamples();
-        }
-    }
-
 	// Always call traceSetup before rendering anything.
 	traceSetup(w, h);
 
-    // #pragma omp parallel num_threads(this->threads)
-    // #pragma omp for collapse(2)
+    #pragma omp parallel num_threads(this->threads)
+    #pragma omp for collapse(2)
 	for (int i = 0; i < w; i++) {
 		for (int j = 0; j < h; j++) {
-			tracePixel(i, j);
+            if (traceUI->aaSwitch()) {
+                if (traceUI->getAAMode() != TraceUI::AAMode::ADAPTIVE) {
+                    int modi = i * samples;
+                    int modj = j * samples;
+                    glm::dvec3 col = glm::dvec3(0.0);
+                    for (double subi = 0; subi < samples; subi += 1) {
+                        for (double subj = 0; subj < samples; subj += 1) {
+                        	col += tracePixel(modi + subi, modj + subj);
+                        }
+                    }
+                    col /= double(samples * samples);
+                    setPixel(i, j, col);
+                } else {
+                    double x1 = double(i)/double(buffer_width);
+    				double x2 = double(i+1)/double(buffer_width);
+    				double y1 = double(j)/double(buffer_height);
+    				double y2 = double(j+1)/double(buffer_height);
+
+    				glm::dvec3 val;
+    				adaptaa(x1, x2, y1, y2, val);
+    				setPixel(i, j, val);
+                }
+            } else {
+    			setPixel(i, j, tracePixel(i, j));
+            }
 		}
 	}
 }
@@ -325,7 +331,6 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 
 	// std::cout << "adaa: " << x1 << " " << x2 << " - " << y1 << " " << y2 << std::endl;
 
-	int sampleCnt = 0;
 	double xs[] = { x1, (x1 + x2) / 2.0, x2 };
 	double ys[] = { y1, (y1 + y2) / 2.0, y2 };
 	double w = x2 - x1, h = y2 - y1;
@@ -340,7 +345,6 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 		glm::dvec3 s_c = trace(s_xy[0] * w + x1, s_xy[1] * h + y1);
 		s.push_back(s_c);
 		mu += s_c;
-		sampleCnt++;
 	}
 	mu *= (1.0 / (samples*samples));
 
@@ -359,7 +363,7 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 		for (int i = 0; i < 2; i++)
 			for (int j = 0; j < 2; j++) {
 				glm::dvec3 subval;
-				sampleCnt += adaptaa(xs[i], xs[i + 1], ys[j], ys[j + 1], subval);
+				adaptaa(xs[i], xs[i + 1], ys[j], ys[j + 1], subval);
 				mu += subval;
 			}
 		mu *= (1.0 / 4.0);
@@ -368,102 +372,31 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 	// std::cout << "adaa: " << x1 << " " << x2 << " - " << y1 << " " << y2 << " " << val << std::endl;
 
 	val = mu;
-	return sampleCnt;
+	return 0;
 }
 
 int RayTracer::aaImage() {
 	int sampleCnt = 0;
-	if (aaMode == TraceUI::AAMode::SUPERSAMPLE || aaMode == TraceUI::AAMode::JITTERED) {
-        sampleCnt = buffer_width * buffer_height;
-
-        #pragma omp parallel num_threads(this->threads)
-        #pragma omp for collapse(2)
-		for(int x = 0; x < buffer_width / samples; ++x) {
-			for(int y = 0; y < buffer_height / samples; ++y) {
-                glm::dvec3 d_pix(0.0);
-                for (int i = 0; i < samples; ++i) {
-                    for (int j = 0; j < samples; ++j) {
-                        d_pix += getPixel(x * samples + i, y * samples + j) / (double) (samples * samples);
-                    }
-                }
-                setPixel(x, y, d_pix);
-			}
-		}
-    } else if (aaMode == TraceUI::AAMode::JITTERED) {
-		// std::cout << "Default Supersampling Mode" << std::endl;
-        #pragma omp parallel num_threads(this->threads)
-        #pragma omp for collapse(2)
-		for (int i = 0; i < buffer_width; i++) {
-			for (int j = 0; j < buffer_height; j++) {
-				double x1 = double(i) / double(buffer_width);
-				double x2 = double(i + 1) / double(buffer_width);
-				double y1 = double(j) / double(buffer_height);
-				double y2 = double(j + 1) / double(buffer_height);
-
-				glm::dvec3 mu(0.0, 0.0, 0.0);
-				for (int k = 0; k < samples*samples; k++) {
-					glm::dvec2 s_xy = hammersley(k, samples*samples);
-					glm::dvec3 s_c = trace(s_xy[0] * (x2 - x1) + x1, s_xy[1] * (y2 - y1) + y1);
-					mu += s_c;
-					sampleCnt++;
-				}
-				mu *= (1.0 / (samples*samples));
-
-				setPixel(i, j, mu);
-			}
-		}
-    } else if(aaMode == TraceUI::AAMode::ADAPTIVE) {
-		// std::cout << "Adaptive Mode" << std::endl;
-		// adaa_eps = (1.0 / (AA_DIV * max(buffer_width, buffer_height))); // fully adaptive
-		#pragma omp parallel num_threads(this->threads)
-		#pragma omp for collapse(2)
-		for(int i=0; i<buffer_width; i++) {
-			for(int j=0; j<buffer_height; j++) {
-				double x1 = double(i)/double(buffer_width);
-				double x2 = double(i+1)/double(buffer_width);
-				double y1 = double(j)/double(buffer_height);
-				double y2 = double(j+1)/double(buffer_height);
-
-				glm::dvec3 val;
-				sampleCnt += adaptaa(x1, x2, y1, y2, val);
-				setPixel(i, j, val);
-			}
-		}
-	}
-
 	return sampleCnt;
 }
 
-bool RayTracer::checkRender()
-{
-	// YOUR CODE HERE
+bool RayTracer::checkRender() {
 	// FIXME: Return true if tracing is done.
-	//        This is a helper routine for GUI.
-	//
-	// TIPS: Introduce an array to track the status of each worker thread.
-	//       This array is maintained by the worker threads.
 	return true;
 }
 
-void RayTracer::waitRender()
-{
+void RayTracer::waitRender() {
 	// YOUR CODE HERE
 	// FIXME: Wait until the rendering process is done.
-	//        This function is essential if you are using an asynchronous
-	//        traceImage implementation.
-	//
-	// TIPS: Join all worker threads here.
 }
 
 
-glm::dvec3 RayTracer::getPixel(int i, int j)
-{
+glm::dvec3 RayTracer::getPixel(int i, int j) {
 	unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
 	return glm::dvec3((double)pixel[0] / 255.0, (double)pixel[1] / 255.0, (double)pixel[2] / 255.0);
 }
 
-void RayTracer::setPixel(int i, int j, glm::dvec3 color)
-{
+void RayTracer::setPixel(int i, int j, glm::dvec3 color) {
 	unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
 
 	pixel[0] = (int)(255.0 * color[0]);

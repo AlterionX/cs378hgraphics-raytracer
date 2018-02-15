@@ -147,5 +147,6 @@ bool SpotLight::validImpact(const ray& r, const glm::dvec3& p) const {
 	return (glm::dot(getDirection(p), ori) <= 0) && (glm::dot(p - (position - offset * ori), ori) > glm::cos(PI / 4));
 }
 bool SpotLight::validImpact(const ray& r, const glm::dvec3& p, glm::dvec3& lp) const {
+    std::cout << "per vertex" << std::endl;
 	return (glm::dot(getDirection(p), ori) <= 0) && (glm::dot(p - (position - lp), ori) > glm::cos(PI / 4));
 }

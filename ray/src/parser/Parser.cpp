@@ -62,13 +62,13 @@ Scene* Parser::parseScene() {
 			scene->add(parseDirectionalLight(scene));
 			break;
         case AREA_LIGHT_RECT:
-            parseAreaLightRect(scene);
+            scene->add(parseAreaLightRect(scene));
             break;
         case AREA_LIGHT_CIRC:
-            parseAreaLightRect(scene);
+            scene->add(parseAreaLightCirc(scene));
             break;
         case SPOT_LIGHT:
-            parseSpotLight(scene);
+            scene->add(parseSpotLight(scene));
             break;
 		case AMBIENT_LIGHT:
 			parseAmbientLight(scene);
@@ -800,7 +800,7 @@ AreaLightCirc* Parser::parseAreaLightCirc(Scene* scene) {
 
 	bool hasPosition(false), hasColor(false), hasDirection(false), hasRadius(false);
 
-	_tokenizer.Read(POINT_LIGHT);
+	_tokenizer.Read(AREA_LIGHT_CIRC);
 	_tokenizer.Read(LBRACE);
 
 	for (;; ) {
@@ -881,7 +881,7 @@ AreaLightRect* Parser::parseAreaLightRect(Scene* scene) {
 
 	bool hasPosition(false), hasColor(false), hasDirection(false), hasWidth(false), hasHeight(false), hasUpDir(false);
 
-	_tokenizer.Read(POINT_LIGHT);
+	_tokenizer.Read(AREA_LIGHT_RECT);
 	_tokenizer.Read(LBRACE);
 
 	for (;; ) {
@@ -981,7 +981,7 @@ SpotLight* Parser::parseSpotLight(Scene* scene) {
 
 	bool hasPosition(false), hasColor(false), hasDirection(false), hasRadius(false), hasAngle(false);
 
-	_tokenizer.Read(POINT_LIGHT);
+	_tokenizer.Read(SPOT_LIGHT);
 	_tokenizer.Read(LBRACE);
 
 	for (;; ) {

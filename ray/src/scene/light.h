@@ -54,9 +54,7 @@ public:
 	void glDraw() const;
 };
 
-class PointLight
-	: public Light
-{
+class PointLight : public Light {
 public:
 	PointLight(Scene *scene, const glm::dvec3& pos, const glm::dvec3& color,
 		float constantAttenuationTerm, float linearAttenuationTerm, float quadraticAttenuationTerm)
