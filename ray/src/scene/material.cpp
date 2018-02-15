@@ -31,34 +31,7 @@ Material::~Material()
 
 // Apply the phong model to this point on the surface of the object, returning
 // the color of that point.
-glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
-{
-	// YOUR CODE HERE
-
-	// For now, this method just returns the diffuse color of the object.
-	// This gives a single matte color for every distinct surface in the
-	// scene, and that's it.  Simple, but enough to get you started.
-	// (It's also inconsistent with the phong model...)
-
-	// Your mission is to fill in this method with the rest of the phong
-	// shading model, including the contributions of all the light sources.
-	// You will need to call both distanceAttenuation() and
-	// shadowAttenuation()
-	// somewhere in your code in order to compute shadows and light falloff.
-	//	if( debugMode )
-	//	std::cout << "Debugging Phong code..." << std::endl;
-
-	// When you're iterating through the lights,
-	// you'll want to use code that looks something
-	// like this:
-	//
-	// for ( const auto& pLight : scene->getAllLights() )
-	// {
-	//              // pLight has type unique_ptr<Light>
-	// 		.
-	// 		.
-	// 		.
-	// }
+glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const {
 
 	// intersection
 	const glm::dvec3 isect_p = r.at(i.getT());

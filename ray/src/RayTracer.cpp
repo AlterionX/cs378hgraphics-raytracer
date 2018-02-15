@@ -59,23 +59,12 @@ glm::dvec3 RayTracer::trace(double x, double y) {
         double sz = traceUI->getDofApSz() / 2; // diam / 2 = radius
         int divs = traceUI->getDofSubDiv();
         // sample divs + 1 from before
-        const double pi = 3.1415926535897932384626433832795028841971;
-        double baseAngle = pi / divs;
+        double baseAngle = PI / divs;
         for (int i = 0; i < divs; i++) {
-            glm::dvec2 jitter;
-            if (traceUI->getDofJitter()) {
-                jitter = hammersley(i, divs);
-            }
-            double offsetAngle = pi / 2;
-            if (traceUI->getDofJitter()) {
-                offsetAngle = offsetAngle + (jitter[0] - 0.5) * pi;
-            }
+            double offsetAngle = PI / 2;
+
             offsetAngle = offsetAngle / divs + (i - 1) * baseAngle;
             glm::dvec3 offVec = (glm::cos(offsetAngle) * scene->getCamera().getV() + glm::sin(offsetAngle) * scene->getCamera().getU()) * sz;
-
-            if (traceUI->getDofJitter()) {
-                offVec = offVec * jitter[1];
-            }
 
             r.setPosition(scene->getCamera().getEye() + offVec);
             r.setDirection(glm::normalize(dest - r.getPosition()));

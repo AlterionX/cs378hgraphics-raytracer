@@ -106,13 +106,11 @@ public: // dof (2 bells)
 	double getDofApSz() { return m_dof_apsz; }
     int getDofSubDiv() { return m_dof_div; }
 	double getDofFD() { return m_dof_fd; }
-	bool getDofJitter() { return m_dof_jitter; }
 protected:
     bool m_dof = false;
 	double m_dof_apsz = 0.05;
     int m_dof_div = 5;
 	double m_dof_fd = 3;
-	bool m_dof_jitter = false;
 
 public: // overlapping objects (1 bell)
 	// enum class ANGLPHMode { NONE = 0, RED_CYAN = 1};

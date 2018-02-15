@@ -64,6 +64,8 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 						break;
 					case 'c':
 						break;
+                    case 's':
+                        break;
 					default:
 						std::cerr << "Invalid argument for O: '" << i << "'."
 						          << std::endl;
@@ -83,6 +85,9 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 						break;
                     case 'd':
                         m_dof_fd = atof(optarg);
+                        break;
+                    case 's':
+                        m_ss_res = atoi(optarg);
                         break;
 					default:
 						std::cerr << "Invalid argument for A, with prequel " << prev << ": '" << i << "'." << std::endl;
@@ -111,17 +116,6 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
                         break;
 					default:
 						std::cerr << "Invalid argument for C, with prequel " << ((unsigned int) prev) << ": '" << i << "'." << std::endl;
-						usage();
-						exit(1);
-				}
-				break;
-			case 'D':
-				switch(prev) {
-                    case 'd':
-                        m_dof_apsz = true;
-                        break;
-					default:
-						std::cerr << "Invalid argument for D, with prequel " << ((unsigned int) prev) << ": '" << i << "'." << std::endl;
 						usage();
 						exit(1);
 				}
@@ -169,8 +163,6 @@ int CommandLineUI::run()
 		raytracer->traceImage(width, height);
 		raytracer->waitRender();
 		if (aaSwitch()) {
-            std::cout << "antialiasing..." << std::endl;
-            std::cout << "antialiasing mode: " << (int) getAAMode() << std::endl;
 			raytracer->aaImage();
 			raytracer->waitRender();
 		}
@@ -210,16 +202,24 @@ void CommandLineUI::usage()
 	     << "  -r <#>      set recursion level (default " << m_nDepth << ")" << endl
 	     << "  -w <#>      set output image width (default " << m_nSize << ")" << endl
 	     << "  -j <FILE>   set parameters from JSON file" << endl
-	     << "  -c <FILE>   one Cubemap file, the remainings will be detected automatically" << endl
+	     << "  -c <FILE>   one Cubemap file, the remaining files will be detected automatically" << endl
 		 << "  -O <char>   additional options as follows:" << endl
 		 << "                  a     turns on adaptive AA" << endl
 		 << "                  j     turns on jittered AA" << endl
 		 << "                  r     turns on regular AA" << endl
 		 << "                  o     turns on overlapping objects" << endl
+         << "                  d     turns on dof" << endl
+         << "                  g     turns on anaglyph" << endl
 		 << "                  c     turns on adaptive termination, must pass -A for this to have meaning." << endl
+         << "                  s     modifies stochastic lighting raycount, must pass -A for this to have meaning." << endl
 		 << "  -A <#>      extra information for the most recent option passed into -O, as listed:" << endl
 		 << "                  ajr   sets antialiasing limit (supersampling value for jittered and regular, max depth for adaptive)." << endl
 		 << "                  c     sets the threshold for adaptive termination." << endl
+         << "                  s     set the number of rays to sample." << endl
+         << "                  d     set the focal distance (double)." << endl
 		 << "  -B <?>      even more extra information for the most recent option passed into -O, as listed:" << endl
-		 << "                  a     sets the threshold value for adaptive anitaliazing (double)." << endl;
+		 << "                  a     sets the threshold value for adaptive anitaliazing (double)." << endl
+         << "                  d     sets the number of samples to take for dof. (double)." << endl
+		 << "  -C <?>      even more extra information for the most recent option passed into -O, as listed:" << endl
+		 << "                  d     sets the aperture size (double)." << endl;
 }
