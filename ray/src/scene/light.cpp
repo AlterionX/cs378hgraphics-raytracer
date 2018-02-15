@@ -74,17 +74,13 @@ glm::dvec3 PointLight::getDirection(const glm::dvec3& P) const { return glm::nor
 
 // assumption: call from out of material
 glm::dvec3 AreaLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const {
-	if (!validImpact(r, p)) {
-		return glm::dvec3(0.0);
-	}
+	if (!validImpact(r, p)) return glm::dvec3(0.0);
 	auto sattn = glm::dvec3(1.0);
+    auto pb = p - r.getDirection() * EPS_BACKUP;
 	for (int i = 0; i < traceUI->softShadowRes(); i++) {
 		//pick point on area light
 		glm::dvec3 lpos = pick(i);
-		auto pb = p - r.getDirection() * EPS_BACKUP;
-		if (validImpact(r, pb, lpos)) {
-			sattn += srsAttenuation(pb, glm::normalize(lpos - pb));
-		}
+		if (validImpact(r, pb, lpos)) sattn += srsAttenuation(pb, glm::normalize(lpos - pb));
 	}
 	sattn *= (1.0 / traceUI->softShadowRes());
 	return sattn;
@@ -93,7 +89,7 @@ bool AreaLight::sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn,
 	glm::dvec3 imp = impact(r);
 	// Note, duplicate code
 	if (glm::dot(imp - r.at(i.getT()), r.getDirection()) <= 0) {
-		if (glm::dot(i.getN(), r.getDirection()) > 0) sattn *= glm::pow(c.kt(i), glm::dvec3(glm::distance(imp, r.getPosition())));
+		// if (glm::dot(i.getN(), r.getDirection()) > 0) sattn *= glm::pow(c.kt(i), glm::dvec3(glm::distance(imp, r.getPosition())));
 		return true;
 	}
 	return false;
@@ -118,19 +114,25 @@ glm::dvec3 AreaLightRect::impact(const ray& r) const {
 
 glm::dvec3 AreaLightCirc::pick(const int i) const {
 	const auto point = hammersley(i, traceUI->softShadowRes());
-	const double pi = 3.1415926535897932384626433832795028841971;
-	double ang_rad = point[0] * 2 * pi;
-	double dist = point[1] * r;
+	double ang_rad = 2 * PI / traceUI->softShadowRes() * i;
+	double dist = 0.5 * r;
 	double x = glm::cos(ang_rad) * dist;
 	double y = glm::sin(ang_rad) * dist;
 
 	// locate a point on the plane to use for u, then solve for v
-	glm::dvec3 u = ori[0] ? glm::dvec3(0.0, 0.0, glm::length(position)) / ori[0] : (ori[1] ? glm::dvec3(0.0, glm::length(position) / ori[1], 0.0) : glm::dvec3(glm::length(position) / ori[2], 0.0, 0.0));
-	u -= position;
-	u = glm::normalize(u);
+    auto abs_ori = glm::abs(ori);
+    glm::dvec3 u = glm::dvec3(0.0);
+    if (abs_ori[0] > abs_ori[1] && abs_ori[0] > abs_ori[2]) {
+        u = glm::dvec3(0.0, -ori[2], ori[1]);
+    } else if (abs_ori[1] > abs_ori[2]) {
+        u = glm::dvec3(-ori[2], 0.0, ori[0]);
+    } else {
+        u = glm::dvec3(-ori[1], ori[0], 0.0);
+    }
+    u = glm::normalize(u);
 	glm::dvec3 v = glm::cross(u, ori);
 
-	return x * u + y * v;
+	return x * u + y * v + position;
 }
 glm::dvec3 AreaLightCirc::impact(const ray& r) const {
 	double t = glm::dot(ori, r.getDirection());
@@ -144,9 +146,8 @@ glm::dvec3 AreaLightCirc::impact(const ray& r) const {
 
 // Must be in code relative to destination point
 bool SpotLight::validImpact(const ray& r, const glm::dvec3& p) const {
-	return (glm::dot(getDirection(p), ori) <= 0) && (glm::dot(p - (position - offset * ori), ori) > glm::cos(PI / 4));
+	return (glm::dot(getDirection(p), ori) <= 0) && (glm::dot(glm::normalize(p - (position - offset * ori)), ori) > glm::cos(PI / 4));
 }
 bool SpotLight::validImpact(const ray& r, const glm::dvec3& p, glm::dvec3& lp) const {
-    std::cout << "per vertex" << std::endl;
-	return (glm::dot(getDirection(p), ori) <= 0) && (glm::dot(p - (position - lp), ori) > glm::cos(PI / 4));
+	return (glm::dot(getDirection(p), ori) <= 0) && (glm::dot(glm::normalize(p - lp), ori) > glm::cos(PI / 4));
 }
