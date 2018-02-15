@@ -44,10 +44,13 @@ enum SYMBOL {
 	CAMERA,					// camera primitive
 	POINT_LIGHT,				// lights
 	DIRECTIONAL_LIGHT,
+    AREA_LIGHT_RECT,
+    AREA_LIGHT_CIRC,
+    SPOT_LIGHT,
 	AMBIENT_LIGHT,
 
 	CONSTANT_ATTENUATION_COEFF,	// Terms affecting the intensity dropoff
-	LINEAR_ATTENUATION_COEFF,		// of point lights (see the PointLight 
+	LINEAR_ATTENUATION_COEFF,		// of point lights (see the PointLight
 	QUADRATIC_ATTENUATION_COEFF,	// class)
 
 	SPHERE,					// primitives

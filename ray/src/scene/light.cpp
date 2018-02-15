@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "util.h"
+#include "../util.h"
 
 #include "../ui/TraceUI.h"
 extern TraceUI* traceUI;
@@ -138,7 +138,8 @@ glm::dvec3 AreaLightCirc::impact(const ray& r) const {
 	t = glm::dot(position - r.getPosition(), ori) / t;
 	// assert (BTTC(t))
 	auto colpos = r.at(t);
-	return glm::dot(colpos, colpos) < (this->r * this->r); // within radius
+	if (glm::dot(colpos - position, colpos - position) < (this->r * this->r)) return r.at(t); // within radius
+    return glm::dvec3(0.0);
 }
 
 // Must be in code relative to destination point

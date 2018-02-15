@@ -91,6 +91,9 @@ string getNameForToken(const SYMBOL kind) {
 
 		tokenNames[BUMP] = "bump";
 		tokenNames[GLOSS] = "gloss";
+        tokenNames[AREA_LIGHT_RECT] = "area_light_rect";
+        tokenNames[AREA_LIGHT_CIRC] = "area_light_circ";
+        tokenNames[SPOT_LIGHT] = "spot_light";
 	}
 
 	// search tokenNames table
@@ -177,6 +180,10 @@ SYMBOL lookupReservedWord(const string& ident) {
 		reservedWords["width"] = WIDTH;
 		reservedWords["radius"] = RADIUS;
 
+        reservedWords["area_light_rect"] = AREA_LIGHT_RECT;
+        reservedWords["area_light_circ"] = AREA_LIGHT_CIRC;
+        reservedWords["spot_light"] = SPOT_LIGHT;
+
 	}
 
 	// search ReservedWords table
@@ -211,4 +218,3 @@ string ScalarToken::toString() const {
 	oss << ": " << _value;
 	return oss.str();
 }
-

@@ -106,7 +106,7 @@ public:
 		PointLight(sc, p, col, cat, lat, qat), ori(glm::normalize(ori)) {}
 
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
-	virtual bool sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const = 0;
+	virtual bool sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const;
 
 	virtual bool validImpact(const ray& r, const glm::dvec3& p) const;
 	virtual bool validImpact(const ray& r, const glm::dvec3& p, glm::dvec3& lp) const;

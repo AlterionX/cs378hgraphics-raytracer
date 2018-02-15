@@ -61,6 +61,15 @@ Scene* Parser::parseScene() {
 		case DIRECTIONAL_LIGHT:
 			scene->add(parseDirectionalLight(scene));
 			break;
+        case AREA_LIGHT_RECT:
+            parseAreaLightRect(scene);
+            break;
+        case AREA_LIGHT_CIRC:
+            parseAreaLightRect(scene);
+            break;
+        case SPOT_LIGHT:
+            parseSpotLight(scene);
+            break;
 		case AMBIENT_LIGHT:
 			parseAmbientLight(scene);
 			break;
@@ -970,7 +979,7 @@ SpotLight* Parser::parseSpotLight(Scene* scene) {
 	float linearAttenuationCoefficient = 0.0f;
 	float quadraticAttenuationCoefficient = 1.0f;
 
-	bool hasPosition(false), hasColor(false), hasDirection(false), hasRadius(false);
+	bool hasPosition(false), hasColor(false), hasDirection(false), hasRadius(false), hasAngle(false);
 
 	_tokenizer.Read(POINT_LIGHT);
 	_tokenizer.Read(LBRACE);

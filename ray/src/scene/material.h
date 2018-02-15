@@ -238,6 +238,7 @@ public:
 		_shininess = shininess;
 	}
 	void setIndex(const MaterialParameter& index) { _index = index; }
+    void setGloss(const MaterialParameter& gloss) { _gloss = gloss; }
 
 	void setBump(const MaterialParameter& b) { _bump = b; }
 
