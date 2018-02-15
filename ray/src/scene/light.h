@@ -11,15 +11,16 @@ using std::max;
 #include "../ui/TraceUI.h"
 #include <FL/gl.h>
 
-class Light
-	: public SceneElement
-{
+class Light : public SceneElement {
 public:
-	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const = 0;
 	virtual double distanceAttenuation(const glm::dvec3& P) const = 0;
+
+	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
+	virtual glm::dvec3 srsAttenuation(const glm::dvec3& pos, const glm::dvec3& dir) const;
+	virtual bool sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const = 0;
+
 	virtual glm::dvec3 getColor() const = 0;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const = 0;
-
 
 protected:
 	Light(Scene *scene, const glm::dvec3& col) : SceneElement(scene), color(col) {}
@@ -27,23 +28,24 @@ protected:
 	glm::dvec3 color;
 
 public:
-	virtual void glDraw(GLenum lightID) const { }
-	virtual void glDraw() const { }
+	virtual void glDraw(GLenum lightID) const {}
+	virtual void glDraw() const {}
 };
 
-class DirectionalLight
-	: public Light
-{
+class DirectionalLight : public Light {
 public:
 	DirectionalLight(Scene *scene, const glm::dvec3& orien, const glm::dvec3& color)
-		: Light(scene, color), orientation(glm::normalize(orien)) { }
-	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
+		: Light(scene, color), orientation(glm::normalize(orien)) {}
+
+	virtual bool sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const;
+
 	virtual double distanceAttenuation(const glm::dvec3& P) const;
+
 	virtual glm::dvec3 getColor() const;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
 
 protected:
-	glm::dvec3 		orientation;
+	glm::dvec3 orientation;
 
 public:
 	void glDraw(GLenum lightID) const;
@@ -55,21 +57,20 @@ class PointLight
 {
 public:
 	PointLight(Scene *scene, const glm::dvec3& pos, const glm::dvec3& color,
-		float constantAttenuationTerm, float linearAttenuationTerm,
-		float quadraticAttenuationTerm)
+		float constantAttenuationTerm, float linearAttenuationTerm, float quadraticAttenuationTerm)
 		: Light(scene, color), position(pos),
 		constantTerm(constantAttenuationTerm),
 		linearTerm(linearAttenuationTerm),
-		quadraticTerm(quadraticAttenuationTerm)
-	{}
+		quadraticTerm(quadraticAttenuationTerm) {}
 
-	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
 	virtual double distanceAttenuation(const glm::dvec3& P) const;
+
+	virtual bool sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const;
+	
 	virtual glm::dvec3 getColor() const;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
 
-	void setAttenuationConstants(float a, float b, float c)
-	{
+	void setAttenuationConstants(float a, float b, float c) {
 		constantTerm = a;
 		linearTerm = b;
 		quadraticTerm = c;
@@ -96,43 +97,63 @@ protected:
 
 
 //TODO stochastic lighting
-/*class AreaLight
-	: public Light
-{
+class AreaLight : public PointLight {
 public:
-	AreaLight(Scene *scene, const glm::dvec3& orien, const glm::dvec3& color)
-		: Light(scene, color), orientation(glm::normalize(orien)) { }
-	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
+	AreaLight(Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
+		float cat, float lat, float qat, const glm::dvec3& ori) : PointLight(sc, p, col, cat, lat, qat), ori(ori) {}
+
 	virtual double distanceAttenuation(const glm::dvec3& P) const;
-	virtual glm::dvec3 getColor() const;
-	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
+
+	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
+	virtual glm::dvec3 srsAttenuation(const glm::dvec3& pos, const glm::dvec3& dir) const;
+	virtual bool sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const = 0;
+
+	virtual bool validImpact(const ray& r, const glm::dvec3& p) const = 0;
+	virtual glm::dvec3 pick(const int i) const = 0;
+	virtual glm::dvec3 impact(const ray& r) const = 0;
 
 protected:
-	glm::dvec3 		orientation;
-
-public:
-	void glDraw(GLenum lightID) const;
-	void glDraw() const;
+	glm::dvec3 ori;
 };
 
-/*class SpotLight
-	: public AreaLight
-{
+class AreaLightRect : public AreaLight {
 public:
-	SpotLight(Scene *scene, const glm::dvec3& orien, const glm::dvec3& color)
-		: AreaLight(scene, color), orientation(glm::normalize(orien)) { }
-	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
-	virtual double distanceAttenuation(const glm::dvec3& P) const;
-	virtual glm::dvec3 getColor() const;
-	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
+	AreaLightRect(Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
+		float cat, float lat, float qat, const glm::dvec3& ori, double w, double h) : AreaLight(sc, p, col, cat, lat, qat, ori), w(w), h(h) {}
+
+	virtual bool validImpact(const ray& r, const glm::dvec3& p) const;
+	virtual glm::dvec3 pick(const int i) const;
+	virtual glm::dvec3 impact(const ray& r) const;
 
 protected:
-	glm::dvec3 		orientation;
-
-public:
-	void glDraw(GLenum lightID) const;
-	void glDraw() const;
+	double w;
+	double h;
 };
-*/
+
+class AreaLightCirc : public AreaLight {
+public:
+	AreaLightCirc(Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
+		float cat, float lat, float qat, const glm::dvec3& ori, double r) : AreaLight(sc, p, col, cat, lat, qat, ori), r(r) {}
+
+	virtual bool validImpact(const ray& r, const glm::dvec3& p) const = 0;
+	virtual glm::dvec3 pick(const int i) const = 0;
+	virtual glm::dvec3 impact(const ray& r) const = 0;
+
+protected:
+	double r;
+};
+
+class SpotLight : public AreaLightCirc {
+public:
+	SpotLight(Scene *sc, const glm::dvec3& p, const glm::dvec3& col,
+		float cat, float lat, float qat, const glm::dvec3& ori, double r, double ang) : AreaLightCirc(sc, p, col, cat, lat, qat, ori, r), ang(ang) {}
+
+	virtual bool validImpact(const ray& r, const glm::dvec3& p) const = 0;
+	virtual glm::dvec3 pick(const int i) const = 0;
+	virtual glm::dvec3 impact(const ray& r) const = 0;
+
+protected:
+	double ang;
+};
 
 #endif // __LIGHT_H__
