@@ -126,6 +126,11 @@ protected:
 	bool m_gloss = false;
 
 public:
+	int softShadowRes() { return m_ss_res; }
+protected:
+	int m_ss_res = 5;
+
+public:
 	// ray counter
 	static void addRays(int number, int ctr)
 	{
