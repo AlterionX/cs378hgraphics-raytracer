@@ -94,9 +94,9 @@ protected:
 
 };
 
-/*
+
 //TODO stochastic lighting
-class AreaLight
+/*class AreaLight
 	: public Light
 {
 public:
@@ -115,7 +115,7 @@ public:
 	void glDraw() const;
 };
 
-class SpotLight
+/*class SpotLight
 	: public AreaLight
 {
 public:

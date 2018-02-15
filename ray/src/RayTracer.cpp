@@ -27,21 +27,71 @@ extern TraceUI* traceUI;
 // in TraceGLWindow, for example.
 bool debugMode = false;
 
-// Trace a top-level ray through pixel(i,j), i.e. normalized window coordinates (x,y),
-// through the projection plane, and out into the scene.  All we do is
-// enter the main ray-tracing method, getting things started by plugging
-// in an initial ray weight of (0.0,0.0,0.0) and an initial recursion depth of 0.
+glm::dvec2 hammersley(int n, int N) {
+	double mul = 0.5, result = 0.0;
+	while (n > 0) {
+		result += (n % 2) ? mul : 0;
+		n /= 2;
+		mul /= 2.0;
+	}
+	return glm::dvec2(result, ((double)n) / N);
+}
 
-glm::dvec3 RayTracer::trace(double x, double y)
-{
+// Trace a top-level ray through pixel(i,j), i.e. normalized window coordinates (x,y),
+// through the projection plane, and out into the scene.
+glm::dvec3 RayTracer::trace(double x, double y) {
 	// Clear out the ray cache in the scene for debugging purposes,
 	if (TraceUI::m_debug)
 		scene->intersectCache.clear();
 
 	ray r(glm::dvec3(0, 0, 0), glm::dvec3(0, 0, 0), glm::dvec3(1, 1, 1), ray::VISIBILITY);
 	scene->getCamera().rayThrough(x, y, r);
+
 	double dummy;
 	glm::dvec3 ret = traceRay(r, traceUI->getATermThresh(), traceUI->getDepth(), dummy);
+
+    //Depth of field, avg
+    if (traceUI->dofSwitch()) {
+        double fd = glm::max(traceUI->getDofFD(), 1.0);
+        ray fr = ray(r);
+        scene->getCamera().rayThrough(0.5, 0.5, fr);
+        glm::dvec3 fp_n = -r.getDirection();
+        glm::dvec3 fp_pt = r.at(fd);
+
+        //plane intersection
+    	double t = glm::dot(fp_n, r.getDirection());
+    	t = glm::dot(fp_pt - r.getPosition(), fp_n) / t;
+    	glm::dvec3 dest = r.at(t);
+
+        double sz = traceUI->getDofApSz() / 2; // diam / 2 = radius
+        int divs = traceUI->getDofSubDiv();
+        // sample divs + 1 from before
+        double pi = 3.1415926535897932384626433832795028841971;
+        double baseAngle = pi / divs;
+        for (int i = 0; i < divs; i++) {
+            glm::dvec2 jitter;
+            if (traceUI->getDofJitter()) {
+                jitter = hammersley(i, divs);
+            }
+            double offsetAngle = pi / 2;
+            if (traceUI->getDofJitter()) {
+                offsetAngle = offsetAngle + (jitter[0] - 0.5) * pi;
+            }
+            offsetAngle = offsetAngle / divs + (i - 1) * baseAngle;
+            glm::dvec3 offVec = (glm::cos(offsetAngle) * scene->getCamera().getV() + glm::sin(offsetAngle) * scene->getCamera().getU()) * sz;
+
+            if (traceUI->getDofJitter()) {
+                offVec = offVec * jitter[1];
+            }
+
+            r.setPosition(scene->getCamera().getEye() + offVec);
+            r.setDirection(glm::normalize(dest - r.getPosition()));
+
+            ret += traceRay(r, traceUI->getATermThresh(), traceUI->getDepth(), dummy);
+        }
+        ret *= (1.0 / (divs + 1.0));
+    }
+
 	ret = glm::clamp(ret, 0.0, 1.0);
 	return ret;
 }
@@ -54,6 +104,12 @@ glm::dvec3 RayTracer::tracePixel(int i, int j)
 
 	double x = double(i) / double(buffer_width);
 	double y = double(j) / double(buffer_height);
+
+    if (traceUI->getAAMode() == TraceUI::AAMode::JITTERED) {
+        auto jitter = hammersley(x*buffer_width+y, buffer_width*buffer_height) * (1.0/double(buffer_width));
+        x += jitter[0];
+        y += jitter[1];
+    }
 
 	unsigned char *pixel = buffer.data() + (i + j * buffer_width) * 3;
 	col = trace(x, y);
@@ -147,8 +203,8 @@ RayTracer::~RayTracer()
 void RayTracer::getBuffer(unsigned char *&buf, int &w, int &h)
 {
 	buf = buffer.data();
-	w = buffer_width;
-	h = buffer_height;
+	h = (traceUI->aaSwitch()) ? buffer_height / traceUI->getAASamples() : buffer_height;
+    w = (traceUI->aaSwitch()) ? buffer_width / traceUI->getAASamples() : buffer_width;
 }
 
 double RayTracer::aspectRatio()
@@ -251,34 +307,13 @@ void RayTracer::traceImage(int w, int h) {
 	// Always call traceSetup before rendering anything.
 	traceSetup(w, h);
 
-	// YOUR CODE HERE
-	// FIXME: Start one or more threads for ray tracing
-	//
-	// TIPS: Ideally, the traceImage should be executed asynchronously,
-	//       i.e. returns IMMEDIATELY after working threads are launched.
-	//
-	//       An asynchronous traceImage lets the GUI update your results
-	//       while rendering.
-
-#pragma omp parallel num_threads(this->threads)
-#pragma omp for collapse(2)
+    #pragma omp parallel num_threads(this->threads)
+    #pragma omp for collapse(2)
 	for (int i = 0; i < w; i++) {
 		for (int j = 0; j < h; j++) {
-			// std::cout << "done " << i << ", " << j << std::endl;
-			tracePixel(i, j);
-			// setPixel(i, j, tracePixel(i, j));
+			setPixel(i, j, tracePixel(i, j));
 		}
 	}
-}
-
-glm::dvec2 hammersley(int n, int N) {
-	double mul = 0.5, result = 0.0;
-	while (n > 0) {
-		result += (n % 2) ? mul : 0;
-		n /= 2;
-		mul /= 2.0;
-	}
-	return glm::dvec2(result, ((double)n) / N);
 }
 
 #define AA_DIV 8 // uncomment line 352 to use
@@ -296,8 +331,8 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 	glm::dvec3 mu(0.0, 0.0, 0.0), sd(0.0, 0.0, 0.0);
 
 	// sample + calculate mean
-#pragma omp parallel num_threads(this->threads)
-#pragma omp for
+    #pragma omp parallel num_threads(this->threads)
+    #pragma omp for
 	for (int i = 0; i < samples*samples; i++) {
 		glm::dvec2 s_xy = hammersley(i, samples*samples);
 		glm::dvec3 s_c = trace(s_xy[0] * w + x1, s_xy[1] * h + y1);
@@ -317,8 +352,8 @@ int RayTracer::adaptaa(double x1, double x2, double y1, double y2, glm::dvec3 &v
 	if (glm::length(sd) > aaThresh) {
 		// std::cout << "divide!" << std::endl;
 		mu = glm::dvec3(0.0, 0.0, 0.0);
-#pragma omp parallel num_threads(this->threads)
-#pragma omp for collapse(2)
+        #pragma omp parallel num_threads(this->threads)
+        #pragma omp for collapse(2)
 		for (int i = 0; i < 2; i++)
 			for (int j = 0; j < 2; j++) {
 				glm::dvec3 subval;
@@ -349,25 +384,9 @@ int RayTracer::aaImage() {
                         d_pix += getPixel(x * samples + i, y * samples + j) / (double) (samples * samples);
                     }
                 }
-                setPixel(x * samples, y * samples, d_pix);
+                setPixel(x, y, d_pix);
 			}
 		}
-
-		for(int x = 0; x < buffer_width / samples; ++x) {
-			for(int y = 0; y < buffer_height / samples; ++y) {
-                glm::dvec3 d_pix = getPixel(x * samples, y * samples);
-                unsigned char *pixel = buffer.data() + ( x + y * (buffer_width / samples) ) * 3;
-            	pixel[0] = (int)( 255.0 * d_pix[0]);
-            	pixel[1] = (int)( 255.0 * d_pix[1]);
-            	pixel[2] = (int)( 255.0 * d_pix[2]);
-            }
-        }
-        /*buffer_width /= samples;
-		buffer_height /= samples;
-        std::fill(buffer.begin() + ( buffer_width + (buffer_height - 1) * (buffer_width * samples) ) * 3, buffer.end(), 0);*/
-		/*bufferSize = buffer_width * buffer_height * 3;
-		buffer.resize(bufferSize);*/
-        traceSetup(buffer_width / samples, buffer_height / samples);
     } else if (aaMode == TraceUI::AAMode::JITTERED) {
 		// std::cout << "Default Supersampling Mode" << std::endl;
         #pragma omp parallel num_threads(this->threads)

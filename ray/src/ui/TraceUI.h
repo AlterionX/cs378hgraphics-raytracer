@@ -102,13 +102,16 @@ protected:
 	bool m_overlappingObjects = false;
 
 public: // dof (2 bells)
-	bool dofSwitch() { return m_dof_apsz == 0; }
+	bool dofSwitch() { return m_dof; }
 	double getDofApSz() { return m_dof_apsz; }
+    int getDofSubDiv() { return m_dof_div; }
 	double getDofFD() { return m_dof_fd; }
 	bool getDofJitter() { return m_dof_jitter; }
 protected:
-	double m_dof_apsz = 0;
-	double m_dof_fd = 0;
+    bool m_dof = false;
+	double m_dof_apsz = 0.05;
+    int m_dof_div = 5;
+	double m_dof_fd = 3;
 	bool m_dof_jitter = false;
 
 public:

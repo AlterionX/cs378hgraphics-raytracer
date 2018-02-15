@@ -27,7 +27,7 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 	const char* jsonfile = nullptr;
 	string cubemap_file;
 	char prev = 0;
-	while ((i = getopt(argc, argv, "tr:w:hj:c:O:A:")) != EOF) {
+	while ((i = getopt(argc, argv, "tr:w:hj:c:O:A:B:C:D")) != EOF) {
 		switch (i) {
 			case 'r':
 				m_nDepth = atoi(optarg);
@@ -56,6 +56,9 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 					case 'o':
 						m_overlappingObjects = true;
 						break;
+                    case 'd':
+                        m_dof = true;
+                        break;
 					case 'c':
 						break;
 					default:
@@ -75,6 +78,9 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 					case 'c':
 						m_aterm_thresh = atof(optarg);
 						break;
+                    case 'd':
+                        m_dof_fd = atof(optarg);
+                        break;
 					default:
 						std::cerr << "Invalid argument for A, with prequel " << prev << ": '" << i << "'." << std::endl;
 						usage();
@@ -86,8 +92,33 @@ CommandLineUI::CommandLineUI(int argc, char** argv) : TraceUI()
 					case 'a':
 						m_aa_thresh = atof(optarg);
 						break;
+                    case 'd':
+                        m_dof_div = atoi(optarg);
+                        break;
 					default:
 						std::cerr << "Invalid argument for B, with prequel " << ((unsigned int) prev) << ": '" << i << "'." << std::endl;
+						usage();
+						exit(1);
+				}
+				break;
+			case 'C':
+				switch(prev) {
+                    case 'd':
+                        m_dof_apsz = atof(optarg);
+                        break;
+					default:
+						std::cerr << "Invalid argument for C, with prequel " << ((unsigned int) prev) << ": '" << i << "'." << std::endl;
+						usage();
+						exit(1);
+				}
+				break;
+			case 'D':
+				switch(prev) {
+                    case 'd':
+                        m_dof_apsz = true;
+                        break;
+					default:
+						std::cerr << "Invalid argument for D, with prequel " << ((unsigned int) prev) << ": '" << i << "'." << std::endl;
 						usage();
 						exit(1);
 				}

@@ -132,4 +132,23 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 	return sattn;
 }
 
+/*class AreaLight
+	: public Light
+{
+public:
+	AreaLight(Scene *scene, const glm::dvec3& orien, const glm::dvec3& color)
+		: Light(scene, color), orientation(glm::normalize(orien)) { }
+	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
+	virtual double distanceAttenuation(const glm::dvec3& P) const;
+	virtual glm::dvec3 getColor() const;
+	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
+
+protected:
+	glm::dvec3 		orientation;
+
+public:
+	void glDraw(GLenum lightID) const;
+	void glDraw() const;
+};*/
+
 #define VERBOSE 0
