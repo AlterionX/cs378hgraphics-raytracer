@@ -63,7 +63,7 @@ double PointLight::distanceAttenuation(const glm::dvec3& P) const {
 	return glm::clamp(1.0 / (constantTerm + linearTerm * d + quadraticTerm * d * d), 0.0, 1.0);
 }
 bool PointLight::sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const {
-	if (glm::dot(position - r.at(i.getT()), r.getDirection()) <= 0) {  
+	if (glm::dot(position - r.at(i.getT()), r.getDirection()) <= 0) {
 		// if (glm::dot(i.getN(), r.getDirection()) > 0) sattn *= glm::pow(c.kt(i), glm::dvec3(glm::distance(position, r.getPosition())));
 		return true;
 	}
@@ -86,7 +86,7 @@ glm::dvec3 AreaLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 			sattn += srsAttenuation(pb, glm::normalize(lpos - pb));
 		}
 	}
-	sattn *= (1.0/traceUI->softShadowRes());
+	sattn *= (1.0 / traceUI->softShadowRes());
 	return sattn;
 }
 bool AreaLight::sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn, const Material& n, const Material& c) const {
@@ -98,6 +98,8 @@ bool AreaLight::sattnLimitCheck(const ray& r, const isect& i, glm::dvec3& sattn,
 	}
 	return false;
 }
+bool AreaLight::validImpact(const ray& r, const glm::dvec3& p) const { return true; }
+bool AreaLight::validImpact(const ray& r, const glm::dvec3& p, glm::dvec3& lp) const { return true; }
 
 glm::dvec3 AreaLightRect::pick(const int i) const {
 	auto point = hammersley(i, traceUI->softShadowRes());
@@ -136,7 +138,7 @@ glm::dvec3 AreaLightCirc::impact(const ray& r) const {
 	t = glm::dot(position - r.getPosition(), ori) / t;
 	// assert (BTTC(t))
 	auto colpos = r.at(t);
-	return glm::dot(colpos, colpos) < (r * r); // within radius
+	return glm::dot(colpos, colpos) < (this->r * this->r); // within radius
 }
 
 // Must be in code relative to destination point
