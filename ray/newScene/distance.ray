@@ -1,0 +1,55 @@
+SBT-raytracer 1.0
+
+camera {
+	position = (0,0,-5);
+	viewdir = (0.0,0.0,1.0);
+	aspectratio = 1;
+	updir = (0,1,0);
+}
+
+directional_light {
+	direction = (0, 0, 1);
+	colour = (0.3, 0.3, 0.3);
+}
+
+point_light {
+	position = (-5, 0, -5);
+	color = (1.00, 1.00, 1.00);
+	constant_attenuation_coeff= 0.05;
+	linear_attenuation_coeff = 0.05;
+	quadratic_attenuation_coeff = 0.00005;	
+}
+
+translate( 1.0,0.0,0.0,
+	scale(1,
+			rotate(1,1,1,1,
+			cylinder{ 
+				material = { 
+					diffuse = (1.0, 1.0, 1.0);
+					specular = (0.9,0.4,0.0);
+					shininess = 76.8;
+				}
+			})))
+
+translate( -1.75,0.0,8.0,
+	scale(1,
+			rotate(1,1,1,1,
+			cylinder{ 
+				material = { 
+					diffuse = (1.0, 1.0, 1.0);
+					specular = (0.9,0.4,0.0);
+					shininess = 76.8;
+				}
+			})))
+
+
+translate( -6.0,0.0,16.0,
+	scale(1,
+			rotate(1,1,1,1,
+			cylinder{ 
+				material = { 
+					diffuse = (1.0, 1.0, 1.0);
+					specular = (0.9,0.4,0.0);
+					shininess = 76.8;
+				}
+			})))

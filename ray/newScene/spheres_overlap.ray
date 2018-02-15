@@ -1,0 +1,58 @@
+SBT-raytracer 1.0
+
+camera
+{
+	position = (8, 0, 0);
+	viewdir = (-1, 0, 0);
+	updir = (0, 1, 0);
+}
+
+directional_light
+{
+	direction = (-1, -1, -0.2);
+	color = (1, 1, 1);
+}
+
+translate( 0, -1, 1,
+scale(2.5, 2.5, 2.5, sphere {
+	material = { 
+		diffuse = (0.4, 0.1, 0.1);
+		transmissive = (0.7, 0.7, 0.7);
+		reflective = (0.7, 0.7, 0.7);
+		specular = (0.7, 0.7, 0.7);
+		shininess = 256;
+		index = 1.1;
+	}
+} ) )
+
+translate( 0, -1, -1,
+scale(2.5, 2.5, 2.5, sphere {
+	material = { 
+		diffuse = (0.1, 0.4, 0.1);
+		transmissive = (0.7, 0.7, 0.7);
+		reflective = (0.7, 0.7, 0.7);
+		specular = (0.7, 0.7, 0.7);
+		shininess = 256;
+		index = 1.1;
+	}
+} ) )
+
+translate( 0, 1, 0,
+scale(2.5, 2.5, 2.5, sphere {
+	material = { 
+		diffuse = (0.1, 0.1, 0.4);
+		transmissive = (0.7, 0.7, 0.7);
+		reflective = (0.7, 0.7, 0.7);
+		specular = (0.7, 0.7, 0.7);
+		shininess = 256;
+		index = 1.1;
+	}
+} ) )
+
+translate( -20.0,0.0,0.0,
+	scale(1.0, 40, 40,
+		box { 
+			material = { 
+				diffuse = (1.0, 1.0, 1.0);
+			};
+		}))
