@@ -66,8 +66,8 @@ void Box::intersectLocalList(ray& r, std::vector<isect>& iv) const {
     const glm::dvec3 p = r.getPosition();
     const glm::dvec3 d = r.getDirection();
     
-    #pragma omp parallel num_threads(6)
-    #pragma for
+    // #pragma omp parallel num_threads(6)
+    // #pragma for
     for(int it = 0; it < 6; it++) { 
         int mod0 = it % 3;
         if(d[mod0] == 0) continue;

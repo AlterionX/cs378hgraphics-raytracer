@@ -117,9 +117,9 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 
 		// check point light
 		if (glm::dot(position - r2l.at(t), r2l.getDirection()) <= 0) {  // went beyond the point light
-			if (is_inside) {
-				sattn *= glm::pow(curr_m.kt(iv_it), glm::dvec3(glm::distance(position, r2l.getPosition())));
-			}
+			// if (is_inside) {
+			// 	sattn *= glm::pow(curr_m.kt(iv_it), glm::dvec3(glm::distance(position, r2l.getPosition())));
+			// }
 			return sattn;
 		}
 
